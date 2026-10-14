@@ -1,0 +1,169 @@
+<?php
+declare(strict_types=1);
+
+// =============================================================================
+// Sistema de Certificación Institucional - ISPEB
+// Front Controller (index.php) | Punto de entrada único de la aplicación
+// PHP 8.1+ | Patrón: MVC + Front Controller + Router
+// =============================================================================
+
+// ── 1. Constantes del entorno ────────────────────────────────────────────────
+define('APP_ROOT',     __DIR__);
+define('APP_DIR',      APP_ROOT . '/aplicacion');
+define('CONFIG_DIR',   APP_ROOT . '/configuracion');
+define('VENDOR_DIR',   APP_ROOT . '/vendor');
+define('STORAGE_DIR',  APP_ROOT . '/almacenamiento');
+define('VERSION',      '1.0.0');
+
+// ── 2. Autoloader de Composer ────────────────────────────────────────────────
+$autoload = VENDOR_DIR . '/autoload.php';
+
+if (!file_exists($autoload)) {
+    http_response_code(503);
+    die('[ISPEB] Las dependencias de la aplicación no están instaladas. Ejecute: composer install');
+}
+
+require_once $autoload;
+
+// ── 3. Configuración de errores según entorno ────────────────────────────────
+// En producción cambiar a: error_reporting(0); ini_set('display_errors', '0');
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('log_errors', '1');
+
+// ── 4. Inicio de sesión seguro ───────────────────────────────────────────────
+if (session_status() === PHP_SESSION_NONE) {
+    session_set_cookie_params([
+        'lifetime' => 0,           // Sesión expira al cerrar el navegador
+        'path'     => '/',
+        'domain'   => '',
+        'secure'   => false,       // Cambiar a true en producción con HTTPS
+        'httponly' => true,        // Previene acceso desde JavaScript (XSS)
+        'samesite' => 'Strict',   // Protege contra CSRF
+    ]);
+    session_name('ISPEB_SESS');
+    session_start();
+
+    // Regenerar ID de sesión para prevenir session fixation
+    if (empty($_SESSION['_token_iniciado'])) {
+        session_regenerate_id(true);
+        $_SESSION['_token_iniciado'] = true;
+    }
+}
+
+// ── 5. Carga de configuración y conexión a BD ────────────────────────────────
+require_once CONFIG_DIR . '/ConexionBD.php';
+
+// ── 6. Enrutador: captura y parseo de la URL solicitada ──────────────────────
+$requestUri  = $_SERVER['REQUEST_URI'] ?? '/';
+
+// Eliminar el prefijo del subdirectorio si la app corre en una subcarpeta
+$baseDir     = '/docencia_qr';
+if (str_starts_with($requestUri, $baseDir)) {
+    $requestUri = substr($requestUri, strlen($baseDir));
+}
+$requestUri  = $requestUri ?: '/';
+
+// Separar ruta de query string y normalizar
+$rutaLimpia  = parse_url($requestUri, PHP_URL_PATH);
+$rutaLimpia  = rtrim($rutaLimpia ?: '/', '/') ?: '/';
+$metodo      = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+
+// ── 7. Tabla de rutas ────────────────────────────────────────────────────────
+// Estructura: 'MÉTODO:/ruta' => ['Controlador', 'metodoAccion']
+//
+// Los controladores viven en aplicacion/controladores/ y siguen PSR-4:
+// App\Controladores\NombreControlador
+
+$rutas = [
+    'GET:/'                  => ['App\\Controladores\\AuthControlador',         'redirigirLogin'],
+    'GET:/login'             => ['App\\Controladores\\AuthControlador',         'mostrarLogin'],
+    'POST:/login'            => ['App\\Controladores\\AuthControlador',         'procesarLogin'],
+    'GET:/logout'            => ['App\\Controladores\\AuthControlador',         'cerrarSesion'],
+    'GET:/dashboard'         => ['App\\Controladores\\DashboardControlador',    'index'],
+    'GET:/funcionarios'      => ['App\\Controladores\\FuncionarioControlador',  'index'],
+    'POST:/registro-manual'  => ['App\\Controladores\\FuncionarioControlador',  'registrarManual'],
+    'POST:/registro-excel'   => ['App\\Controladores\\FuncionarioControlador',  'procesarExcel'],
+    'GET:/descargar-qrs'     => ['App\\Controladores\\FuncionarioControlador',  'descargarQrsZip'],
+    'GET:/respaldo-bd'       => ['App\\Controladores\\BackupControlador',       'respaldar'],
+    'GET:/validar'           => ['App\\Controladores\\ValidacionControlador',   'validar'],
+    'GET:/404'               => ['App\\Controladores\\ErrorControlador',        'notFound'],
+];
+
+$claveRuta = "{$metodo}:{$rutaLimpia}";
+
+// ── 8. Despacho de la ruta ───────────────────────────────────────────────────
+if (array_key_exists($claveRuta, $rutas)) {
+    [$clase, $accion] = $rutas[$claveRuta];
+
+    // Verificar que el archivo del controlador exista antes de instanciar
+    $archivoControlador = APP_DIR . '/Controladores/' . basename(str_replace('\\', '/', $clase)) . '.php';
+
+    if (file_exists($archivoControlador)) {
+        require_once $archivoControlador;
+    }
+
+    if (class_exists($clase)) {
+        $controlador = new $clase();
+
+        if (method_exists($controlador, $accion)) {
+            $controlador->$accion();
+        } else {
+            // El método no existe en el controlador → 500 interno
+            http_response_code(500);
+            error_log("[ISPEB Router] Acción '{$accion}' no encontrada en '{$clase}'.");
+            die('[ISPEB] Error interno del servidor: acción no encontrada.');
+        }
+    } else {
+        // Clase no existe → intentar cargar el controlador de error
+        despacharError404($rutas, APP_DIR);
+    }
+} else {
+    // Ruta no registrada → 404
+    despacharError404($rutas, APP_DIR);
+}
+
+// ── Función auxiliar: despachar error 404 ────────────────────────────────────
+function despacharError404(array $rutas, string $appDir): void
+{
+    http_response_code(404);
+
+    if (isset($rutas['GET:/404'])) {
+        [$clase, $accion] = $rutas['GET:/404'];
+        $archivoControlador = $appDir . '/Controladores/' . basename(str_replace('\\', '/', $clase)) . '.php';
+
+        if (file_exists($archivoControlador)) {
+            require_once $archivoControlador;
+        }
+
+        if (class_exists($clase) && method_exists($clase, $accion)) {
+            $controlador = new $clase();
+            $controlador->$accion();
+            return;
+        }
+    }
+
+    // Fallback si no existe el controlador de errores
+    echo '<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>404 – Página no encontrada | ISPEB</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0;
+               display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .container { text-align: center; }
+        h1 { font-size: 6rem; margin: 0; color: #6366f1; }
+        p  { font-size: 1.2rem; color: #94a3b8; }
+        a  { color: #6366f1; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <p>La ruta solicitada no existe en el sistema institucional.</p>
+        <a href="/docencia_qr/login">← Volver al inicio</a>
+    </div>
+</body>
+</html>';
+}

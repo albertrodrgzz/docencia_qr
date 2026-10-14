@@ -1,0 +1,11 @@
+# Dependencias de Composer (Se instalan con composer install, no se suben)
+/vendor/
+
+# Archivos generados dinámicamente
+/almacenamiento/qrs/*.png
+/almacenamiento/exportaciones/*.zip
+/almacenamiento/respaldos_bd/*.sql
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,71 @@
+# =============================================================================
+# Sistema de Certificación Institucional - ISPEB
+# Apache .htaccess | Front Controller Pattern + Seguridad Perimetral
+# =============================================================================
+
+# ── Motor de reescritura ────────────────────────────────────────────────────
+Options -Indexes -MultiViews
+Options +FollowSymLinks
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /docencia_qr/
+
+    # ── Bloquear acceso directo a directorios sensibles ─────────────────────
+    # Ninguna petición HTTP puede acceder a estas rutas directamente.
+    RewriteRule ^(aplicacion|almacenamiento|vendor)(/.*)?$ - [F,L]
+
+    # ── Excepción: archivos físicos bajo /recursos ──────────────────────────
+    # Si el archivo solicitado EXISTE físicamente en disco (imagen, CSS, JS...),
+    # se sirve directamente sin pasar por index.php.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+
+    # Si es un directorio existente también se respeta (ej. /recursos/)
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # ── Front Controller: Todo el resto va a index.php ──────────────────────
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# ── Seguridad de cabeceras HTTP ─────────────────────────────────────────────
+<IfModule mod_headers.c>
+    # Prevenir clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    # Prevenir detección de MIME type
+    Header always set X-Content-Type-Options "nosniff"
+    # Habilitar filtro XSS del navegador (legacy)
+    Header always set X-XSS-Protection "1; mode=block"
+    # No referenciar URL de origen en peticiones cross-origin
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Ocultar firma del servidor
+    Header always unset Server
+    Header always unset X-Powered-By
+</IfModule>
+
+# ── Protección explícita de archivos críticos ───────────────────────────────
+<FilesMatch "^(composer\.json|composer\.lock|\.env.*|\.gitignore)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# ── Compresión GZIP para respuestas ─────────────────────────────────────────
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json
+</IfModule>
+
+# ── Caché de activos estáticos ───────────────────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/png  "access plus 1 month"
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType text/css   "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>
