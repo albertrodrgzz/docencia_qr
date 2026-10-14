@@ -135,8 +135,9 @@ class FuncionarioControlador
     {
         $this->requiereAuth();
 
-        // TODO: cargar vista de listado cuando esté disponible
-        echo '<p style="font-family:sans-serif;padding:2rem">Listado de funcionarios – en construcción.</p>';
+        $datos = $this->modelo->listarTodos();
+        $funcionarios = $datos;
+        require_once dirname(__DIR__) . '/Vistas/funcionarios.php';
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -237,6 +238,100 @@ class FuncionarioControlador
     }
 
     // ────────────────────────────────────────────────────────────────────────
+    // GET /api/funcionario → Obtener detalles y código QR en Base64 vía AJAX
+    // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Retorna los datos institucionales del funcionario y su código QR en Base64.
+     * Permite al frontend visualizar la imagen incluso si /almacenamiento/qrs/
+     * está protegido por .htaccess.
+     */
+    public function obtenerDetallesAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        // Validar sesión activa
+        if (!$this->sesionActiva()) {
+            http_response_code(401);
+            echo json_encode([
+                'exito'   => false,
+                'mensaje' => 'Sesión no autenticada.',
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            $cedula = trim((string) ($_GET['cedula'] ?? ''));
+
+            if ($cedula === '') {
+                http_response_code(400);
+                echo json_encode([
+                    'exito'   => false,
+                    'mensaje' => 'El parámetro cédula es obligatorio.',
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            // Consultar datos del funcionario en BD
+            $funcionario = $this->modelo->buscarPorCedula($cedula);
+
+            if (!$funcionario) {
+                http_response_code(404);
+                echo json_encode([
+                    'exito'   => false,
+                    'mensaje' => 'Funcionario no encontrado con la cédula indicada.',
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            // Construcción de la ruta física del archivo QR
+            $rutaQr     = dirname(__DIR__, 2) . '/almacenamiento/qrs/qr_' . $cedula . '.png';
+            $cedulaSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $cedula);
+            $rutaQrSafe = dirname(__DIR__, 2) . '/almacenamiento/qrs/qr_' . $cedulaSafe . '.png';
+
+            $qrBase64 = null;
+            if (file_exists($rutaQr) && is_readable($rutaQr)) {
+                $contenidoArchivo = file_get_contents($rutaQr);
+                if ($contenidoArchivo !== false) {
+                    $qrBase64 = 'data:image/png;base64,' . base64_encode($contenidoArchivo);
+                }
+            } elseif (file_exists($rutaQrSafe) && is_readable($rutaQrSafe)) {
+                $contenidoArchivo = file_get_contents($rutaQrSafe);
+                if ($contenidoArchivo !== false) {
+                    $qrBase64 = 'data:image/png;base64,' . base64_encode($contenidoArchivo);
+                }
+            }
+
+            http_response_code(200);
+            echo json_encode([
+                'exito'        => true,
+                'cedula'       => $funcionario['cedula'] ?? $cedula,
+                'nombre'       => $funcionario['nombre_completo'] ?? '',
+                'cargo'        => $funcionario['cargo'] ?? '',
+                'departamento' => $funcionario['departamento'] ?? '',
+                'qr_base64'    => $qrBase64,
+                'funcionario'  => [
+                    'id_funcionario'  => $funcionario['id_funcionario'] ?? null,
+                    'cedula'          => $funcionario['cedula'] ?? $cedula,
+                    'nombre'          => $funcionario['nombre_completo'] ?? '',
+                    'nombre_completo' => $funcionario['nombre_completo'] ?? '',
+                    'cargo'           => $funcionario['cargo'] ?? '',
+                    'departamento'    => $funcionario['departamento'] ?? '',
+                    'fecha_registro'  => $funcionario['fecha_registro'] ?? '',
+                ],
+            ], JSON_UNESCAPED_UNICODE);
+
+        } catch (Throwable $e) {
+            error_log(sprintf('[FuncionarioControlador::obtenerDetallesAjax Error] %s', $e->getMessage()));
+            http_response_code(500);
+            echo json_encode([
+                'exito'   => false,
+                'mensaje' => 'Error interno al consultar los detalles del funcionario.',
+            ], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
     // POST /registro-excel → Carga masiva de funcionarios desde archivo .xlsx
     // ────────────────────────────────────────────────────────────────────────
 
@@ -267,7 +362,8 @@ class FuncionarioControlador
 
         try {
             // ── 1. Validación del archivo subido ─────────────────────────
-            if (empty($_FILES['documento_excel']) || $_FILES['documento_excel']['error'] !== UPLOAD_ERR_OK) {
+            $excelFile = $_FILES['archivo_excel'] ?? $_FILES['documento_excel'] ?? null;
+            if (empty($excelFile) || $excelFile['error'] !== UPLOAD_ERR_OK) {
                 http_response_code(400);
                 echo json_encode([
                     'estado'  => 'error',
@@ -276,7 +372,7 @@ class FuncionarioControlador
                 return;
             }
 
-            $nombreOriginal = (string) $_FILES['documento_excel']['name'];
+            $nombreOriginal = (string) $excelFile['name'];
             $extension      = strtolower(pathinfo($nombreOriginal, PATHINFO_EXTENSION));
 
             if ($extension !== 'xlsx') {
@@ -288,7 +384,7 @@ class FuncionarioControlador
                 return;
             }
 
-            $archivoTemporal = (string) $_FILES['documento_excel']['tmp_name'];
+            $archivoTemporal = (string) $excelFile['tmp_name'];
 
             if (!is_uploaded_file($archivoTemporal)) {
                 http_response_code(400);
@@ -414,13 +510,103 @@ class FuncionarioControlador
     }
 
     /**
-     * Redirige al login si no hay sesión activa (para rutas GET protegidas).
+     * Exige autenticación en sesión para continuar. Redirige a /login si no está autenticado.
      */
-    private function requiereAuth(): void
+    protected function requiereAuth(): void
     {
-        if (!$this->sesionActiva()) {
-            header('Location: ' . self::BASE_URL . '/');
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!$this->sesionActiva() && !isset($_SESSION['rol'])) {
+            $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+            header('Location: ' . $base . '/login');
             exit();
         }
+    }
+
+    /**
+     * GET /api/funcionarios/obtener?cedula=...
+     * Retorna los datos de un funcionario en formato JSON para poblar el modal de edición.
+     */
+    public function obtenerAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!$this->sesionActiva()) {
+            http_response_code(401);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Sesión expirada.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $cedula = trim((string) ($_GET['cedula'] ?? ''));
+        if ($cedula === '') {
+            http_response_code(400);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Se requiere el número de cédula.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $funcionario = $this->modelo->buscarPorCedula($cedula);
+        if (!$funcionario) {
+            http_response_code(404);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Funcionario no encontrado.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'estado'      => 'ok',
+            'exito'       => true,
+            'funcionario' => $funcionario,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * POST /api/funcionarios/actualizar
+     * Actualiza los datos de un funcionario (permitido para cualquier rol autenticado).
+     */
+    public function actualizarAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!$this->sesionActiva()) {
+            http_response_code(401);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Sesión no autenticada.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $cedulaOriginal = trim((string) ($_POST['cedula_original'] ?? $_POST['cedula_actual'] ?? ''));
+        $nuevaCedula    = trim((string) ($_POST['cedula'] ?? ''));
+        $nombre         = trim((string) ($_POST['nombre'] ?? $_POST['nombre_completo'] ?? ''));
+        $cargo          = trim((string) ($_POST['cargo'] ?? ''));
+        $departamento   = trim((string) ($_POST['departamento'] ?? ''));
+
+        if ($cedulaOriginal === '' || $nombre === '' || $cargo === '' || $departamento === '') {
+            http_response_code(422);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Todos los campos son obligatorios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $res = $this->modelo->actualizar($cedulaOriginal, $nombre, $cargo, $departamento, $nuevaCedula);
+
+        if (!$res['exito']) {
+            http_response_code(409);
+            echo json_encode(['estado' => 'error', 'mensaje' => $res['error'] ?? 'No se pudo actualizar el funcionario.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'estado'      => 'ok',
+            'exito'       => true,
+            'mensaje'     => 'Funcionario actualizado correctamente.',
+            'funcionario' => [
+                'cedula_original' => $cedulaOriginal,
+                'cedula'          => !empty($nuevaCedula) ? $nuevaCedula : $cedulaOriginal,
+                'nombre_completo' => $nombre,
+                'cargo'           => $cargo,
+                'departamento'    => $departamento
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
     }
 }

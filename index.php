@@ -13,6 +13,7 @@ define('APP_DIR',      APP_ROOT . '/aplicacion');
 define('CONFIG_DIR',   APP_ROOT . '/configuracion');
 define('VENDOR_DIR',   APP_ROOT . '/vendor');
 define('STORAGE_DIR',  APP_ROOT . '/almacenamiento');
+define('BASE_URL',     '/docencia_qr');
 define('VERSION',      '1.0.0');
 
 // ── 2. Autoloader de Composer ────────────────────────────────────────────────
@@ -82,11 +83,23 @@ $rutas = [
     'GET:/logout'            => ['App\\Controladores\\AuthControlador',         'cerrarSesion'],
     'GET:/dashboard'         => ['App\\Controladores\\DashboardControlador',    'index'],
     'GET:/funcionarios'      => ['App\\Controladores\\FuncionarioControlador',  'index'],
+    'POST:/funcionarios/guardar' => ['App\\Controladores\\FuncionarioControlador',  'registrarManual'],
     'POST:/registro-manual'  => ['App\\Controladores\\FuncionarioControlador',  'registrarManual'],
     'POST:/registro-excel'   => ['App\\Controladores\\FuncionarioControlador',  'procesarExcel'],
     'GET:/descargar-qrs'     => ['App\\Controladores\\FuncionarioControlador',  'descargarQrsZip'],
+    'GET:/api/funcionario'   => ['App\\Controladores\\FuncionarioControlador',  'obtenerDetallesAjax'],
+    'GET:/api/funcionarios/obtener'    => ['App\\Controladores\\FuncionarioControlador',  'obtenerAjax'],
+    'POST:/api/funcionarios/actualizar' => ['App\\Controladores\\FuncionarioControlador', 'actualizarAjax'],
+    'GET:/reportes'          => ['App\\Controladores\\ReporteControlador',      'index'],
+    'GET:/reportes/pdf'      => ['App\\Controladores\\ReporteControlador',      'generarHojaQRPdf'],
+    'GET:/api/reportes/filtrar' => ['App\\Controladores\\ReporteControlador',   'filtrarAjax'],
+    'GET:/respaldos'         => ['App\\Controladores\\RespaldoControlador',     'index'],
+    'GET:/respaldos/descargar' => ['App\\Controladores\\BackupControlador',     'respaldar'],
     'GET:/respaldo-bd'       => ['App\\Controladores\\BackupControlador',       'respaldar'],
     'GET:/usuarios'          => ['App\\Controladores\\UsuarioControlador',      'index'],
+    'GET:/perfil'            => ['App\\Controladores\\PerfilControlador',       'index'],
+    'GET:/api/usuarios/obtener'        => ['App\\Controladores\\UsuarioControlador',      'obtenerAjax'],
+    'POST:/api/usuarios/actualizar'    => ['App\\Controladores\\UsuarioControlador',      'actualizarAjax'],
     'POST:/usuarios'         => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'POST:/usuarios/guardar' => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'POST:/usuarios/crear'   => ['App\\Controladores\\UsuarioControlador',      'guardar'],
@@ -99,11 +112,18 @@ $claveRuta = "{$metodo}:{$rutaLimpia}";
 // ── 7.1 Guardia Global de Seguridad RBAC (Solo Administrador) ────────────────
 // Protege cualquier ruta de exportación, descargas masivas, respaldos o gestión de usuarios
 $rutasSoloAdmin = [
+    '/reportes',
+    '/reportes/pdf',
+    '/api/reportes/filtrar',
+    '/respaldos',
+    '/respaldos/descargar',
     '/respaldo-bd',
     '/descargar-qrs',
     '/usuarios',
     '/usuarios/guardar',
-    '/usuarios/crear'
+    '/usuarios/crear',
+    '/api/usuarios/obtener',
+    '/api/usuarios/actualizar'
 ];
 
 $esRutaRestringida = in_array($rutaLimpia, $rutasSoloAdmin, true) 

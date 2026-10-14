@@ -153,4 +153,96 @@ class UsuarioControlador
             ], JSON_UNESCAPED_UNICODE);
         }
     }
+
+    /**
+     * GET /api/usuarios/obtener?id=...
+     * Retorna la información de un usuario institucional en formato JSON para el modal de edición.
+     */
+    public function obtenerAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $rolActual = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+        if (!isset($_SESSION['rol']) || ($rolActual !== 'admin' && $rolActual !== 'administrador')) {
+            echo json_encode(['estado' => 'error', 'mensaje' => 'No tienes permisos para editar usuarios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $id = (int) ($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            http_response_code(400);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Identificador de usuario inválido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $usuario = $this->modelo->buscarPorId($id);
+        if (!$usuario) {
+            http_response_code(404);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Usuario no encontrado.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'estado'  => 'ok',
+            'exito'   => true,
+            'usuario' => $usuario,
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * POST /api/usuarios/actualizar
+     * Actualiza la información y rol del usuario (restringido estrictamente a Administradores).
+     */
+    public function actualizarAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $rolActual = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+        if (!isset($_SESSION['rol']) || ($rolActual !== 'admin' && $rolActual !== 'administrador')) {
+            echo json_encode(['estado' => 'error', 'mensaje' => 'No tienes permisos para editar usuarios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $id       = (int) ($_POST['id_usuario'] ?? $_POST['id'] ?? 0);
+        $nombre   = trim((string) ($_POST['nombre']   ?? ''));
+        $correo   = trim((string) ($_POST['correo']   ?? ''));
+        $rol      = trim((string) ($_POST['rol']      ?? 'estandar'));
+        $password = (string) ($_POST['password'] ?? '');
+        $estado   = trim((string) ($_POST['estado']   ?? 'Activo'));
+
+        if ($id <= 0 || $nombre === '' || $correo === '') {
+            http_response_code(422);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'El nombre y correo son obligatorios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(422);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'El formato del correo electrónico no es válido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $res = $this->modelo->actualizarUsuario($id, $nombre, $correo, $rol, $password, $estado);
+
+        if (!$res['exito']) {
+            http_response_code(409);
+            echo json_encode(['estado' => 'error', 'mensaje' => $res['error'] ?? 'No se pudo actualizar el usuario.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'estado'  => 'ok',
+            'exito'   => true,
+            'mensaje' => 'Usuario actualizado correctamente.',
+            'usuario' => [
+                'id_usuario' => $id,
+                'nombre'     => $nombre,
+                'correo'     => $correo,
+                'rol'        => $rol,
+                'estado'     => $estado
+            ]
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }
