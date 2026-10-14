@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Controladores;
 
+use App\Modelos\FuncionarioModelo;
+
 /**
  * Clase DashboardControlador
  *
@@ -32,6 +34,10 @@ class DashboardControlador
         if (!$this->sesionActiva()) {
             $this->redirigir('/');
         }
+
+        // Obtener estadísticas reales de funcionarios desde el modelo
+        $funcionarioModelo = new FuncionarioModelo();
+        $datos = $funcionarioModelo->obtenerEstadisticas();
 
         $vistaDashboard = self::VISTAS_DIR . '/dashboard.php';
 

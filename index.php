@@ -86,11 +86,53 @@ $rutas = [
     'POST:/registro-excel'   => ['App\\Controladores\\FuncionarioControlador',  'procesarExcel'],
     'GET:/descargar-qrs'     => ['App\\Controladores\\FuncionarioControlador',  'descargarQrsZip'],
     'GET:/respaldo-bd'       => ['App\\Controladores\\BackupControlador',       'respaldar'],
+    'GET:/usuarios'          => ['App\\Controladores\\UsuarioControlador',      'index'],
+    'POST:/usuarios'         => ['App\\Controladores\\UsuarioControlador',      'guardar'],
+    'POST:/usuarios/guardar' => ['App\\Controladores\\UsuarioControlador',      'guardar'],
+    'POST:/usuarios/crear'   => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'GET:/validar'           => ['App\\Controladores\\ValidacionControlador',   'validar'],
     'GET:/404'               => ['App\\Controladores\\ErrorControlador',        'notFound'],
 ];
 
 $claveRuta = "{$metodo}:{$rutaLimpia}";
+
+// ── 7.1 Guardia Global de Seguridad RBAC (Solo Administrador) ────────────────
+// Protege cualquier ruta de exportación, descargas masivas, respaldos o gestión de usuarios
+$rutasSoloAdmin = [
+    '/respaldo-bd',
+    '/descargar-qrs',
+    '/usuarios',
+    '/usuarios/guardar',
+    '/usuarios/crear'
+];
+
+$esRutaRestringida = in_array($rutaLimpia, $rutasSoloAdmin, true) 
+    || str_contains($rutaLimpia, 'respaldo') 
+    || str_contains($rutaLimpia, 'exportar');
+
+if ($esRutaRestringida) {
+    $rolSesion = strtolower(trim((string) ($_SESSION['rol'] ?? '')));
+    $esAdmin   = in_array($rolSesion, ['admin', 'administrador'], true);
+
+    if (!$esAdmin) {
+        http_response_code(403);
+
+        // Si la solicitud es asíncrona (Fetch / AJAX), devolver JSON
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'exito'   => false,
+                'mensaje' => 'Acceso denegado: Se requieren permisos de administrador institucional para esta acción.',
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        // Si es navegación directa, redirigir al dashboard con sesión activa o al login
+        $destino = (!empty($_SESSION['auth'])) ? ($baseDir . '/dashboard') : ($baseDir . '/login');
+        header('Location: ' . $destino);
+        exit();
+    }
+}
 
 // ── 8. Despacho de la ruta ───────────────────────────────────────────────────
 if (array_key_exists($claveRuta, $rutas)) {

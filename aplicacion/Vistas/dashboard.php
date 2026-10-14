@@ -1,1766 +1,1247 @@
 <?php
-// Extraer datos de sesión con valores por defecto seguros
-$correoUsuario = htmlspecialchars($_SESSION['correo'] ?? 'usuario@ispeb.edu', ENT_QUOTES, 'UTF-8');
-$rolUsuario    = htmlspecialchars($_SESSION['rol']    ?? 'Administrador',     ENT_QUOTES, 'UTF-8');
+/**
+ * Vista del Panel de Control (Dashboard) — ISPEB Sistema Institucional de Certificaciones
+ * Estética Hiper-minimalista macOS / iOS (Glassmorphism, Apple HIG, Datos Reales)
+ *
+ * @var array{
+ *     total_funcionarios: int,
+ *     registrados_hoy: int,
+ *     ultimos_funcionarios: array<int, array<string, mixed>>
+ * } $datos Estadísticas provistas por DashboardControlador
+ */
 
-// Saludo dinámico según la hora del servidor
-$hora = (int) date('H');
-$saludo = match(true) {
-    $hora >= 5  && $hora < 12 => 'Buenos días',
-    $hora >= 12 && $hora < 19 => 'Buenas tardes',
-    default                   => 'Buenas noches',
-};
+$baseUrl = (isset($_SERVER['REQUEST_URI']) && str_starts_with($_SERVER['REQUEST_URI'], '/docencia_qr')) 
+    ? '/docencia_qr' 
+    : '';
 
-// Avatar: iniciales del correo
-$iniciales = strtoupper(substr($correoUsuario, 0, 2));
+$correoUsuario = htmlspecialchars((string) ($_SESSION['correo'] ?? 'usuario@ispeb.gob.ve'), ENT_QUOTES, 'UTF-8');
+$rolUsuario    = htmlspecialchars((string) ($_SESSION['rol'] ?? 'Administrador'), ENT_QUOTES, 'UTF-8');
+$esAdmin       = in_array(strtolower((string)($_SESSION['rol'] ?? '')), ['admin', 'administrador'], true);
+
+$totalFuncionarios = (int) ($datos['total_funcionarios'] ?? 0);
+$registradosHoy    = (int) ($datos['registrados_hoy'] ?? 0);
+$ultimosRegistros  = (array) ($datos['ultimos_funcionarios'] ?? []);
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Panel de control del Sistema de Certificación Institucional ISPEB. Gestiona funcionarios, códigos QR y escaneos recientes.">
-    <title>Dashboard – Sistema ISPEB</title>
+    <meta name="description" content="Dashboard Institucional — Sistema de Certificaciones ISPEB">
+    <title>Panel de Control — ISPEB</title>
 
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- FontAwesome 6 CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
-          crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        /* ─────────────────────────────────────────────
-           1. Tokens de diseño (macOS / iOS palette)
-        ───────────────────────────────────────────── */
+        /* ── Variables de Diseño Apple macOS / iOS ── */
         :root {
-            --bg-main:        #f5f5f7;
-            --bg-sidebar:     rgba(255, 255, 255, 0.55);
-            --sidebar-border: rgba(255, 255, 255, 0.80);
-            --sidebar-w:      260px;
-
-            --accent:         #0071e3;
-            --accent-hover:   #0077ed;
-            --accent-dark:    #004aad;
-
-            --secondary-btn-bg:     rgba(0, 113, 227, 0.10);
-            --secondary-btn-hover:  rgba(0, 113, 227, 0.18);
-
-            --text-primary:   #1d1d1f;
-            --text-secondary: #6e6e73;
-            --text-muted:     #a1a1a6;
-
-            --card-bg:        #ffffff;
-            --card-radius:    20px;
-            --card-shadow:    0 4px 24px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
-            --card-shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.11), 0 2px 8px rgba(0, 0, 0, 0.06);
-
-            --nav-h:          68px;
-            --radius-sm:      12px;
-            --radius-md:      16px;
-
-            --transition:     all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-
-            /* Widget icon gradients */
-            --grad-blue:   linear-gradient(135deg, #0071e3 0%, #42a5f5 100%);
-            --grad-purple: linear-gradient(135deg, #7e5bef 0%, #c084fc 100%);
-            --grad-green:  linear-gradient(135deg, #10b981 0%, #6ee7b7 100%);
-            --grad-orange: linear-gradient(135deg, #f59e0b 0%, #fcd34d 100%);
+            --apple-blue: #0071e3;
+            --apple-blue-hover: #0077ed;
+            --apple-blue-subtle: rgba(0, 113, 227, 0.08);
+            --apple-green: #34c759;
+            --apple-green-subtle: rgba(52, 199, 89, 0.12);
+            --apple-purple: #af52de;
+            --apple-purple-subtle: rgba(175, 82, 222, 0.10);
+            --apple-red: #ff3b30;
+            --apple-red-subtle: rgba(255, 59, 48, 0.10);
+            --bg-base: #f5f5f7;
+            --surface-card: rgba(255, 255, 255, 0.82);
+            --surface-glass: rgba(255, 255, 255, 0.65);
+            --border-glass: rgba(255, 255, 255, 0.85);
+            --border-light: rgba(0, 0, 0, 0.06);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #a1a1a6;
+            --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --radius-card: 22px;
+            --radius-btn: 12px;
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+            --shadow-elevated: 0 16px 36px -8px rgba(0, 0, 0, 0.06), 0 0 1px 1px rgba(255, 255, 255, 0.7) inset;
         }
 
-        /* ─────────────────────────────────────────────
-           2. Reset & Base
-        ───────────────────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        html { scroll-behavior: smooth; }
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-main);
+            font-family: var(--font-family);
+            background-color: var(--bg-base);
             color: var(--text-primary);
             min-height: 100vh;
-            display: flex;
-            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* ─────────────────────────────────────────────
-           3. Sidebar (Glassmorphism)
-        ───────────────────────────────────────────── */
-        .sidebar {
-            width: var(--sidebar-w);
-            min-height: 100vh;
+        /* ── Lienzo ambiental de fondo ── */
+        .ambient-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-sidebar);
-            backdrop-filter: blur(28px) saturate(180%);
-            -webkit-backdrop-filter: blur(28px) saturate(180%);
-            border-right: 1px solid var(--sidebar-border);
-            padding: 28px 20px 24px;
-            transition: var(--transition);
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: 
+                radial-gradient(circle at 10% 15%, rgba(206, 226, 255, 0.45) 0%, transparent 40%),
+                radial-gradient(circle at 90% 10%, rgba(228, 219, 255, 0.40) 0%, transparent 40%),
+                radial-gradient(circle at 50% 90%, rgba(210, 238, 255, 0.40) 0%, transparent 50%),
+                #f5f5f7;
         }
 
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0 8px 32px;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
-            margin-bottom: 28px;
-        }
-
-        .sidebar-logo .logo-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: var(--grad-blue);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 18px;
-            flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35);
-        }
-
-        .sidebar-logo .logo-text {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .sidebar-logo .logo-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.3px;
-        }
-
-        .sidebar-logo .logo-sub {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        /* Nav links */
-        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-
-        .nav-label {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-muted);
-            padding: 0 12px;
-            margin: 20px 0 8px;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 11px 14px;
-            border-radius: var(--radius-sm);
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .nav-link .nav-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            flex-shrink: 0;
-            background: rgba(0,0,0,0.04);
-            color: var(--text-secondary);
-            transition: var(--transition);
-        }
-
-        .nav-link:hover {
-            background: rgba(0, 113, 227, 0.07);
-            color: var(--accent);
-        }
-
-        .nav-link:hover .nav-icon {
-            background: rgba(0, 113, 227, 0.12);
-            color: var(--accent);
-        }
-
-        .nav-link.active {
-            background: rgba(0, 113, 227, 0.10);
-            color: var(--accent);
-            font-weight: 600;
-        }
-
-        .nav-link.active .nav-icon {
-            background: var(--grad-blue);
-            color: white;
-            box-shadow: 0 3px 10px rgba(0, 113, 227, 0.30);
-        }
-
-        /* Badge */
-        .nav-badge {
-            margin-left: auto;
-            background: var(--accent);
-            color: white;
-            font-size: 10px;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 20px;
-            line-height: 1.5;
-        }
-
-        /* Sidebar footer */
-        .sidebar-footer {
-            padding-top: 20px;
-            border-top: 1px solid rgba(0,0,0,0.06);
-        }
-
-        .sidebar-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: var(--radius-sm);
-            cursor: default;
-        }
-
-        .user-avatar-sm {
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            background: var(--grad-blue);
-            color: white;
-            font-size: 12px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .user-info-sm .user-name-sm {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 160px;
-        }
-
-        .user-info-sm .user-role-sm {
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-
-        /* ─────────────────────────────────────────────
-           4. Layout principal
-        ───────────────────────────────────────────── */
-        .main-wrapper {
-            margin-left: var(--sidebar-w);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        /* ─────────────────────────────────────────────
-           5. Navbar superior
-        ───────────────────────────────────────────── */
-        .topnav {
-            height: var(--nav-h);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 36px;
-            background: rgba(245, 245, 247, 0.85);
-            backdrop-filter: blur(20px) saturate(160%);
-            -webkit-backdrop-filter: blur(20px) saturate(160%);
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+        /* ── Navbar macOS Simplificado ── */
+        .macos-navbar {
             position: sticky;
             top: 0;
             z-index: 100;
+            height: 64px;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(245, 245, 247, 0.75);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid var(--border-light);
         }
 
-        .topnav-left h1 {
-            font-size: 19px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.4px;
-        }
-
-        .topnav-left .topnav-greeting {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 400;
-            margin-top: 1px;
-        }
-
-        .topnav-right {
+        .nav-brand {
             display: flex;
             align-items: center;
             gap: 12px;
+            text-decoration: none;
+            color: inherit;
         }
 
-        /* Notificación dot */
-        .notif-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            border: none;
-            background: var(--card-bg);
-            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-            color: var(--text-secondary);
-            font-size: 15px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-            position: relative;
-        }
-
-        .notif-btn:hover { background: white; box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
-
-        .notif-dot {
-            position: absolute;
-            top: 7px; right: 7px;
-            width: 8px; height: 8px;
-            background: #ff3b30;
-            border-radius: 50%;
-            border: 2px solid var(--bg-main);
-        }
-
-        /* User pill */
-        .user-pill {
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            padding: 6px 14px 6px 6px;
-            background: var(--card-bg);
-            border-radius: 30px;
-            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
-            cursor: default;
-        }
-
-        .user-avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: var(--grad-blue);
+        .brand-badge-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0077ed 0%, #0051c6 100%);
             color: white;
-            font-size: 11px;
-            font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 119, 237, 0.25);
         }
 
-        .user-pill-text {
+        .brand-badge-icon svg {
+            width: 19px;
+            height: 19px;
+            fill: currentColor;
+        }
+
+        .brand-meta {
             display: flex;
             flex-direction: column;
-            line-height: 1.2;
+            line-height: 1.15;
         }
 
-        .user-pill-name {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-primary);
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .brand-meta-title {
+            font-size: 0.96rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
         }
 
-        .user-pill-role {
-            font-size: 10px;
-            color: var(--text-muted);
+        .brand-meta-sub {
+            font-size: 0.74rem;
+            color: var(--text-secondary);
         }
 
-        /* Logout button */
-        .btn-logout {
+        .nav-user-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-role-pill {
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            padding: 9px 18px;
-            border: none;
-            border-radius: 30px;
-            background: rgba(255, 59, 48, 0.10);
-            color: #ff3b30;
-            font-size: 13px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-        }
-
-        .btn-logout:hover {
-            background: #ff3b30;
-            color: white;
-            box-shadow: 0 4px 14px rgba(255, 59, 48, 0.35);
-            transform: translateY(-1px);
-        }
-
-        /* ─────────────────────────────────────────────
-           6. Contenido principal
-        ───────────────────────────────────────────── */
-        .main-content {
-            padding: 36px 36px 48px;
-            flex: 1;
-        }
-
-        /* Section title */
-        .section-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
-        }
-
-        .section-sub {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 28px;
-        }
-
-        /* ─────────────────────────────────────────────
-           7. Widget Grid (3 tarjetas)
-        ───────────────────────────────────────────── */
-        .widgets-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .widget-card {
-            background: var(--card-bg);
-            border-radius: var(--card-radius);
-            padding: 26px 24px;
-            box-shadow: var(--card-shadow);
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-            cursor: default;
-        }
-
-        .widget-card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: linear-gradient(135deg, rgba(255,255,255,0.6) 0%, transparent 60%);
-            pointer-events: none;
-        }
-
-        .widget-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--card-shadow-hover);
-        }
-
-        .widget-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 18px;
-        }
-
-        .widget-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            color: white;
-            flex-shrink: 0;
-        }
-
-        .widget-icon.blue   { background: var(--grad-blue);   box-shadow: 0 6px 16px rgba(0,113,227,0.30); }
-        .widget-icon.purple { background: var(--grad-purple);  box-shadow: 0 6px 16px rgba(126,91,239,0.30); }
-        .widget-icon.green  { background: var(--grad-green);   box-shadow: 0 6px 16px rgba(16,185,129,0.30); }
-
-        .widget-trend {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 3px 9px;
+            padding: 6px 14px;
+            background: rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             border-radius: 20px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
-        .trend-up   { background: rgba(16,185,129,0.12); color: #059669; }
-        .trend-down { background: rgba(255,59,48,0.10);  color: #ff3b30; }
-
-        .widget-value {
-            font-size: 40px;
-            font-weight: 800;
-            color: var(--text-primary);
-            letter-spacing: -1.5px;
-            line-height: 1;
-            margin-bottom: 6px;
-        }
-
-        .widget-label {
-            font-size: 14px;
+            font-size: 0.81rem;
             font-weight: 500;
             color: var(--text-secondary);
         }
 
-        .widget-meta {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 16px;
-            padding-top: 14px;
-            border-top: 1px solid rgba(0,0,0,0.05);
+        .role-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--apple-green);
+            box-shadow: 0 0 6px rgba(52, 199, 89, 0.6);
         }
 
-        /* ─────────────────────────────────────────────
-           8. Tabla de Escaneos Recientes
-        ───────────────────────────────────────────── */
-        .panel-card {
-            background: var(--card-bg);
-            border-radius: var(--card-radius);
-            box-shadow: var(--card-shadow);
-            overflow: hidden;
-            margin-bottom: 28px;
+        .user-role-pill strong {
+            color: var(--text-primary);
+            font-weight: 600;
         }
 
-        .panel-header {
+        .btn-logout {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--apple-red);
+            background: var(--apple-red-subtle);
+            text-decoration: none;
+            transition: all 0.18s ease;
+        }
+
+        .btn-logout:hover {
+            background: var(--apple-red);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.25);
+        }
+
+        .btn-logout svg {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* ── Contenido Principal ── */
+        .main-layout {
+            position: relative;
+            z-index: 1;
+            max-width: 1160px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 34px 28px 60px;
+            flex: 1;
+        }
+
+        /* ── Encabezado de la Sección y Acciones ── */
+        .dashboard-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 26px;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            margin-bottom: 26px;
+            flex-wrap: wrap;
+            gap: 16px;
         }
 
-        .panel-title {
-            font-size: 16px;
+        .dashboard-title-group h2 {
+            font-size: 1.55rem;
             font-weight: 700;
+            letter-spacing: -0.03em;
             color: var(--text-primary);
         }
 
-        .panel-subtitle {
-            font-size: 12px;
-            color: var(--text-muted);
+        .dashboard-title-group p {
+            font-size: 0.86rem;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        .actions-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            height: 40px;
+            padding: 0 16px;
+            border-radius: var(--radius-btn);
+            font-family: inherit;
+            font-size: 0.86rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-action svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .btn-action-primary {
+            background: var(--apple-blue);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
+        }
+
+        .btn-action-primary:hover {
+            background: var(--apple-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 113, 227, 0.32);
+        }
+
+        .btn-action-secondary {
+            background: var(--surface-card);
+            color: var(--apple-blue);
+            border: 1px solid rgba(0, 113, 227, 0.2);
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .btn-action-secondary:hover {
+            background: #ffffff;
+            border-color: var(--apple-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.15);
+        }
+
+        .btn-action-admin {
+            background: rgba(175, 82, 222, 0.09);
+            color: var(--apple-purple);
+            border: 1px solid rgba(175, 82, 222, 0.25);
+        }
+
+        .btn-action-admin:hover {
+            background: var(--apple-purple);
+            color: #ffffff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(175, 82, 222, 0.25);
+        }
+
+        .btn-action:active {
+            transform: scale(0.98);
+        }
+
+        /* ── Grid de Métricas (Exactamente 3 Widgets) ── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-card);
+            padding: 24px 22px;
+            box-shadow: var(--shadow-elevated);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 42px -10px rgba(0, 0, 0, 0.08);
+        }
+
+        .metric-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .metric-icon-wrap {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        .metric-icon-wrap.blue {
+            background: linear-gradient(135deg, #0077ed 0%, #0051c6 100%);
+            box-shadow: 0 4px 12px rgba(0, 119, 237, 0.3);
+        }
+
+        .metric-icon-wrap.green {
+            background: linear-gradient(135deg, #34c759 0%, #248a3d 100%);
+            box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);
+        }
+
+        .metric-icon-wrap.purple {
+            background: linear-gradient(135deg, #af52de 0%, #7e2db7 100%);
+            box-shadow: 0 4px 12px rgba(175, 82, 222, 0.3);
+        }
+
+        .metric-icon-wrap svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .metric-pill-tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 4px 9px;
+            border-radius: 12px;
+            letter-spacing: -0.01em;
+        }
+
+        .tag-blue { background: var(--apple-blue-subtle); color: var(--apple-blue); }
+        .tag-green { background: var(--apple-green-subtle); color: #248a3d; }
+        .tag-purple { background: var(--apple-purple-subtle); color: var(--apple-purple); }
+
+        .metric-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.035em;
+            color: var(--text-primary);
+            line-height: 1.1;
+        }
+
+        .metric-label {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ── Tabla Estilo macOS (Últimos 5 Registros) ── */
+        .table-card {
+            background: var(--surface-card);
+            backdrop-filter: blur(25px) saturate(180%);
+            -webkit-backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-elevated);
+            overflow: hidden;
+        }
+
+        .table-card-header {
+            padding: 22px 26px 18px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .table-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
             margin-top: 2px;
         }
 
-        .btn-text {
-            background: none;
-            border: none;
-            color: var(--accent);
-            font-size: 13px;
+        .badge-count {
+            font-size: 0.75rem;
             font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            padding: 6px 12px;
-            border-radius: 8px;
-            transition: var(--transition);
+            padding: 3px 10px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 20px;
+            color: var(--text-secondary);
         }
 
-        .btn-text:hover { background: rgba(0,113,227,0.08); }
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+        }
 
-        .table-wrap { overflow-x: auto; }
-
-        table {
+        .macos-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 0.88rem;
+            text-align: left;
         }
 
-        thead th {
-            text-align: left;
-            padding: 12px 26px;
-            font-size: 11px;
+        .macos-table th {
+            padding: 14px 26px;
+            font-size: 0.72rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--text-muted);
-            background: rgba(0,0,0,0.015);
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            background: rgba(0, 0, 0, 0.015);
+            border-bottom: 1px solid var(--border-light);
+            white-space: nowrap;
         }
 
-        tbody tr {
-            transition: background 0.15s;
-        }
-
-        tbody tr:hover { background: rgba(0,113,227,0.03); }
-
-        tbody td {
-            padding: 14px 26px;
+        .macos-table td {
+            padding: 16px 26px;
             color: var(--text-primary);
-            border-bottom: 1px solid rgba(0,0,0,0.04);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
             vertical-align: middle;
+            transition: background 0.15s ease;
         }
 
-        tbody tr:last-child td { border-bottom: none; }
+        .macos-table tbody tr:last-child td {
+            border-bottom: none;
+        }
 
-        .td-pill {
+        .macos-table tbody tr:hover td {
+            background: rgba(0, 113, 227, 0.025);
+        }
+
+        .cedula-badge {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.81rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 6px;
+            color: var(--text-primary);
+        }
+
+        .funcionario-nombre {
+            font-weight: 600;
+            color: var(--text-primary);
+            display: block;
+        }
+
+        .funcionario-cargo {
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            margin-top: 1px;
+            display: block;
+        }
+
+        .departamento-tag {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 3px 10px;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.74rem;
+            font-weight: 600;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 11px;
+            background: var(--apple-green-subtle);
+            color: #248a3d;
+        }
+
+        .status-chip .chip-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--apple-green);
+        }
+
+        /* Estado Vacío de la Tabla */
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+        }
+
+        .empty-state h3 {
+            font-size: 0.98rem;
             font-weight: 600;
-        }
-
-        .pill-ok     { background: rgba(16,185,129,0.12); color: #059669; }
-        .pill-info   { background: rgba(0,113,227,0.10);  color: #0071e3; }
-        .pill-warn   { background: rgba(245,158,11,0.12); color: #d97706; }
-
-        /* ─────────────────────────────────────────────
-           9. Botones de Acción (estilo Apple)
-        ───────────────────────────────────────────── */
-        .actions-section {
-            background: var(--card-bg);
-            border-radius: var(--card-radius);
-            box-shadow: var(--card-shadow);
-            padding: 28px 30px;
-        }
-
-        .actions-heading {
-            font-size: 16px;
-            font-weight: 700;
             color: var(--text-primary);
-            margin-bottom: 4px;
         }
 
-        .actions-desc {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 22px;
+        .empty-state p {
+            font-size: 0.82rem;
+            margin-top: 4px;
         }
 
-        .actions-row {
+        /* ── Modales Glassmorphism macOS ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
             align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
         }
 
-        /* Botón primario */
-        .btn-primary {
-            display: inline-flex;
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 22px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 28px 60px rgba(0, 0, 0, 0.16);
+            transform: scale(0.96) translateY(12px);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-head {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
             align-items: center;
-            gap: 9px;
-            padding: 13px 24px;
+            justify-content: space-between;
+        }
+
+        .modal-head-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+        }
+
+        .modal-close-btn {
+            background: rgba(0, 0, 0, 0.05);
             border: none;
-            border-radius: 14px;
-            background: var(--accent);
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: inherit;
-            cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
-            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 113, 227, 0.42);
-        }
-
-        .btn-primary:active { transform: translateY(0); }
-
-        .btn-primary .btn-icon-wrap {
-            width: 26px;
-            height: 26px;
-            background: rgba(255,255,255,0.20);
-            border-radius: 7px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 13px;
-        }
-
-        /* Botón secundario */
-        .btn-secondary {
-            display: inline-flex;
-            align-items: center;
-            gap: 9px;
-            padding: 13px 24px;
-            border: 1.5px solid rgba(0, 113, 227, 0.25);
-            border-radius: 14px;
-            background: var(--secondary-btn-bg);
-            color: var(--accent);
-            font-size: 14px;
-            font-weight: 600;
-            font-family: inherit;
             cursor: pointer;
-            transition: var(--transition);
-            text-decoration: none;
+            color: var(--text-secondary);
+            transition: all 0.15s ease;
         }
 
-        .btn-secondary:hover {
-            background: var(--secondary-btn-hover);
-            border-color: rgba(0, 113, 227, 0.45);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0, 113, 227, 0.15);
+        .modal-close-btn:hover {
+            background: rgba(255, 59, 48, 0.12);
+            color: var(--apple-red);
         }
 
-        .btn-secondary:active { transform: translateY(0); }
+        .modal-close-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
 
-        .btn-secondary .btn-icon-wrap {
-            width: 26px;
-            height: 26px;
-            background: rgba(0, 113, 227, 0.12);
-            border-radius: 7px;
+        .modal-body {
+            padding: 22px 24px;
+        }
+
+        .modal-form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal-label {
+            display: block;
+            font-size: 0.77rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .modal-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 14px;
+            font-family: inherit;
+            font-size: 0.90rem;
+            color: var(--text-primary);
+            background: rgba(0, 0, 0, 0.035);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 11px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .modal-input:focus {
+            background: #ffffff;
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.16);
+        }
+
+        .modal-foot {
+            padding: 16px 24px 20px;
+            border-top: 1px solid var(--border-light);
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-size: 13px;
+            justify-content: flex-end;
+            gap: 10px;
         }
 
-        /* ─────────────────────────────────────────────
-           10. Animación de entrada (fade + slide)
-        ───────────────────────────────────────────── */
-        @keyframes fadeSlideUp {
-            from { opacity: 0; transform: translateY(18px); }
-            to   { opacity: 1; transform: translateY(0); }
+        .btn-modal-cancel {
+            height: 38px;
+            padding: 0 16px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: transparent;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: background 0.15s ease;
         }
 
-        .animate-in {
-            animation: fadeSlideUp 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+        .btn-modal-cancel:hover {
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--text-primary);
         }
 
-        .delay-1 { animation-delay: 0.05s; }
-        .delay-2 { animation-delay: 0.10s; }
-        .delay-3 { animation-delay: 0.15s; }
-        .delay-4 { animation-delay: 0.22s; }
-        .delay-5 { animation-delay: 0.30s; }
-
-        /* ─────────────────────────────────────────────
-           11. Responsivo básico
-        ───────────────────────────────────────────── */
-        @media (max-width: 1100px) {
-            .widgets-grid { grid-template-columns: repeat(2, 1fr); }
+        .btn-modal-submit {
+            height: 38px;
+            padding: 0 18px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: var(--apple-blue);
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0, 113, 227, 0.2);
+            transition: all 0.15s ease;
         }
 
-        @media (max-width: 768px) {
-            :root { --sidebar-w: 0px; }
-            .sidebar { transform: translateX(-100%); }
-            .main-wrapper { margin-left: 0; }
-            .widgets-grid { grid-template-columns: 1fr; }
-            .topnav { padding: 0 20px; }
-            .main-content { padding: 24px 20px 40px; }
+        .btn-modal-submit:hover {
+            background: var(--apple-blue-hover);
+        }
+
+        .btn-modal-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ── Estilos de SweetAlert2 macOS ── */
+        .swal2-popup.apple-modal {
+            border-radius: 20px !important;
+            padding: 24px !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(25px) !important;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.12) !important;
+            font-family: var(--font-family) !important;
+        }
+
+        .swal2-title {
+            font-size: 1.15rem !important;
+            font-weight: 600 !important;
+            color: var(--text-primary) !important;
+        }
+
+        .swal2-confirm.apple-btn {
+            background-color: var(--apple-blue) !important;
+            border-radius: 10px !important;
+            padding: 9px 22px !important;
+            font-size: 0.86rem !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+
+        /* ── Responsivo ── */
+        @media (max-width: 900px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            .macos-navbar {
+                padding: 0 20px;
+            }
+            .main-layout {
+                padding: 24px 16px 40px;
+            }
         }
     </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════
-     SIDEBAR
-════════════════════════════════════════════ -->
-<aside class="sidebar" id="sidebar" role="navigation" aria-label="Menú principal">
+    <!-- Fondo ambiental -->
+    <div class="ambient-bg" aria-hidden="true"></div>
 
-    <div class="sidebar-logo">
-        <div class="logo-icon"><i class="fa-solid fa-certificate"></i></div>
-        <div class="logo-text">
-            <span class="logo-title">ISPEB</span>
-            <span class="logo-sub">Sistema de Certificación</span>
-        </div>
-    </div>
-
-    <nav class="sidebar-nav" aria-label="Navegación principal">
-        <span class="nav-label">Principal</span>
-
-        <a href="/docencia_qr/dashboard" class="nav-link active" id="nav-dashboard" aria-current="page">
-            <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
-            Dashboard
-        </a>
-
-        <span class="nav-label">Gestión</span>
-
-        <a href="/docencia_qr/funcionarios" class="nav-link" id="nav-funcionarios">
-            <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
-            Funcionarios
-            <span class="nav-badge">142</span>
-        </a>
-
-        <a href="#" class="nav-link" id="nav-qrs">
-            <span class="nav-icon"><i class="fa-solid fa-qrcode"></i></span>
-            Códigos QR
-        </a>
-
-        <a href="#" class="nav-link" id="nav-escaneos">
-            <span class="nav-icon"><i class="fa-solid fa-camera-viewfinder"></i></span>
-            Escaneos
-        </a>
-
-        <span class="nav-label">Sistema</span>
-
-        <a href="#" class="nav-link" id="nav-reportes">
-            <span class="nav-icon"><i class="fa-solid fa-chart-bar"></i></span>
-            Reportes
-        </a>
-
-        <a href="#" class="nav-link" id="nav-config">
-            <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
-            Configuración
-        </a>
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="sidebar-user">
-            <div class="user-avatar-sm"><?= $iniciales ?></div>
-            <div class="user-info-sm">
-                <div class="user-name-sm"><?= $correoUsuario ?></div>
-                <div class="user-role-sm"><?= $rolUsuario ?></div>
+    <!-- ── Navbar Simplificado macOS ── -->
+    <header class="macos-navbar">
+        <a href="<?= htmlspecialchars($baseUrl) ?>/dashboard" class="nav-brand">
+            <div class="brand-badge-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 16l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>
             </div>
-        </div>
-    </div>
-</aside>
+            <div class="brand-meta">
+                <span class="brand-meta-title">ISPEB</span>
+                <span class="brand-meta-sub">Certificación QR</span>
+            </div>
+        </a>
 
-
-<!-- ═══════════════════════════════════════════
-     MAIN WRAPPER
-════════════════════════════════════════════ -->
-<div class="main-wrapper">
-
-    <!-- ── Topnav ── -->
-    <header class="topnav" role="banner">
-        <div class="topnav-left">
-            <h1><?= $saludo ?>, <?= $rolUsuario ?></h1>
-            <p class="topnav-greeting">
-                <i class="fa-regular fa-calendar-check" style="margin-right:5px;color:var(--accent)"></i>
-                <?= date('l, d \d\e F \d\e Y') ?>
-            </p>
-        </div>
-
-        <div class="topnav-right">
-            <!-- Notificaciones -->
-            <button class="notif-btn" id="btn-notificaciones" title="Notificaciones" aria-label="Notificaciones">
-                <i class="fa-solid fa-bell"></i>
-                <span class="notif-dot"></span>
-            </button>
-
-            <!-- Pill de usuario -->
-            <div class="user-pill" role="status" aria-label="Usuario actual">
-                <div class="user-avatar"><?= $iniciales ?></div>
-                <div class="user-pill-text">
-                    <span class="user-pill-name"><?= $correoUsuario ?></span>
-                    <span class="user-pill-role"><?= $rolUsuario ?></span>
-                </div>
+        <div class="nav-user-actions">
+            <!-- Rol de usuario conectado -->
+            <div class="user-role-pill">
+                <span class="role-dot" aria-hidden="true"></span>
+                <span>Rol: <strong><?= $rolUsuario ?></strong></span>
             </div>
 
-            <!-- Cerrar Sesión -->
-            <a href="/docencia_qr/logout" class="btn-logout" id="btn-cerrar-sesion" role="button">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                Cerrar Sesión
+            <!-- Botón elegante de Cerrar Sesión -->
+            <a href="<?= htmlspecialchars($baseUrl) ?>/logout" class="btn-logout" title="Cerrar Sesión Segura">
+                <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span>Salir</span>
             </a>
         </div>
     </header>
 
-    <!-- ── Contenido ── -->
-    <main class="main-content" role="main" id="main-content">
+    <!-- ── Layout Principal ── -->
+    <main class="main-layout">
 
-        <!-- Título de sección -->
-        <p class="section-title animate-in">Resumen General</p>
-        <p class="section-sub animate-in delay-1">Métricas actualizadas del sistema institucional.</p>
-
-        <!-- ── Widget Grid ── -->
-        <div class="widgets-grid">
-
-            <!-- Widget 1: Funcionarios -->
-            <div class="widget-card animate-in delay-1" id="widget-funcionarios">
-                <div class="widget-header">
-                    <div class="widget-icon blue"><i class="fa-solid fa-users"></i></div>
-                    <span class="widget-trend trend-up">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +12%
-                    </span>
-                </div>
-                <div class="widget-value">142</div>
-                <div class="widget-label">Total Funcionarios</div>
-                <div class="widget-meta">
-                    <i class="fa-solid fa-circle-check" style="color:#10b981;margin-right:5px"></i>
-                    138 activos &nbsp;·&nbsp; 4 inactivos
-                </div>
+        <!-- Barra de Título y Acciones estrictamente necesarias -->
+        <section class="dashboard-header">
+            <div class="dashboard-title-group">
+                <h2>Panel Institucional</h2>
+                <p>Resumen general de certificaciones y registros de funcionarios.</p>
             </div>
 
-            <!-- Widget 2: QRs Generados -->
-            <div class="widget-card animate-in delay-2" id="widget-qrs">
-                <div class="widget-header">
-                    <div class="widget-icon purple"><i class="fa-solid fa-qrcode"></i></div>
-                    <span class="widget-trend trend-up">
-                        <i class="fa-solid fa-arrow-trend-up"></i> +8%
-                    </span>
-                </div>
-                <div class="widget-value">1,847</div>
-                <div class="widget-label">QRs Generados</div>
-                <div class="widget-meta">
-                    <i class="fa-solid fa-clock" style="color:#7e5bef;margin-right:5px"></i>
-                    Último: hace 2 horas
-                </div>
-            </div>
-
-            <!-- Widget 3: Escaneos Recientes -->
-            <div class="widget-card animate-in delay-3" id="widget-escaneos">
-                <div class="widget-header">
-                    <div class="widget-icon green"><i class="fa-solid fa-camera-viewfinder"></i></div>
-                    <span class="widget-trend trend-down">
-                        <i class="fa-solid fa-arrow-trend-down"></i> -3%
-                    </span>
-                </div>
-                <div class="widget-value">324</div>
-                <div class="widget-label">Escaneos Recientes</div>
-                <div class="widget-meta">
-                    <i class="fa-solid fa-calendar-day" style="color:#10b981;margin-right:5px"></i>
-                    Este mes: 1,201 escaneos
-                </div>
-            </div>
-
-        </div><!-- /widgets-grid -->
-
-        <!-- ── Tabla de Escaneos ── -->
-        <div class="panel-card animate-in delay-4" id="panel-escaneos-recientes">
-            <div class="panel-header">
-                <div>
-                    <p class="panel-title">Escaneos Recientes</p>
-                    <p class="panel-subtitle">Últimas 5 validaciones de certificado</p>
-                </div>
-                <button class="btn-text" id="btn-ver-todos" type="button">Ver todos →</button>
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Funcionario</th>
-                            <th>Código QR</th>
-                            <th>Fecha / Hora</th>
-                            <th>Dispositivo</th>
-                            <th>Estado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>María González</strong></td>
-                            <td><code style="font-size:11px;color:var(--text-muted)">QR-2024-0142</code></td>
-                            <td>14 Oct 2026, 08:15</td>
-                            <td><i class="fa-brands fa-apple" style="margin-right:4px"></i>iPhone 15</td>
-                            <td><span class="td-pill pill-ok"><i class="fa-solid fa-circle-check"></i> Válido</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Carlos Pérez</strong></td>
-                            <td><code style="font-size:11px;color:var(--text-muted)">QR-2024-0138</code></td>
-                            <td>14 Oct 2026, 07:52</td>
-                            <td><i class="fa-brands fa-android" style="margin-right:4px"></i>Samsung S24</td>
-                            <td><span class="td-pill pill-ok"><i class="fa-solid fa-circle-check"></i> Válido</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Ana Rodríguez</strong></td>
-                            <td><code style="font-size:11px;color:var(--text-muted)">QR-2024-0129</code></td>
-                            <td>14 Oct 2026, 07:30</td>
-                            <td><i class="fa-solid fa-desktop" style="margin-right:4px"></i>Web Browser</td>
-                            <td><span class="td-pill pill-info"><i class="fa-solid fa-circle-info"></i> Pendiente</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Luis Martínez</strong></td>
-                            <td><code style="font-size:11px;color:var(--text-muted)">QR-2024-0115</code></td>
-                            <td>13 Oct 2026, 17:44</td>
-                            <td><i class="fa-brands fa-apple" style="margin-right:4px"></i>iPad Pro</td>
-                            <td><span class="td-pill pill-warn"><i class="fa-solid fa-triangle-exclamation"></i> Expirado</span></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Rosa Jiménez</strong></td>
-                            <td><code style="font-size:11px;color:var(--text-muted)">QR-2024-0101</code></td>
-                            <td>13 Oct 2026, 14:18</td>
-                            <td><i class="fa-brands fa-android" style="margin-right:4px"></i>Pixel 8</td>
-                            <td><span class="td-pill pill-ok"><i class="fa-solid fa-circle-check"></i> Válido</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ── Botones de Acción ── -->
-        <div class="actions-section animate-in delay-5" id="acciones-principales">
-            <p class="actions-heading">Acciones Rápidas</p>
-            <p class="actions-desc">Gestiona funcionarios y genera certificados QR desde aquí.</p>
-
-            <div class="actions-row">
-                <!-- Primario: Añadir Funcionario -->
-                <button class="btn-primary" type="button" id="btn-anadir-funcionario">
-                    <span class="btn-icon-wrap"><i class="fa-solid fa-user-plus"></i></span>
-                    Añadir Funcionario (Manual)
+            <div class="actions-toolbar">
+                <!-- Acción 1: Nuevo Registro -->
+                <button type="button" class="btn-action btn-action-primary" id="btnNuevoRegistro">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Nuevo Registro</span>
                 </button>
 
-                <!-- Secundario: Carga Masiva -->
-                <button class="btn-secondary" type="button" id="btn-carga-masiva">
-                    <span class="btn-icon-wrap"><i class="fa-solid fa-file-excel"></i></span>
-                    Carga Masiva (Excel)
+                <!-- Acción 2: Carga Excel -->
+                <button type="button" class="btn-action btn-action-secondary" id="btnCargaExcel">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Carga Excel</span>
                 </button>
 
-                <!-- Extra: Generar QR -->
-                <button class="btn-secondary" type="button" id="btn-generar-qr">
-                    <span class="btn-icon-wrap"><i class="fa-solid fa-qrcode"></i></span>
-                    Generar QR
-                </button>
-
-                <!-- Descargar QRs (ZIP) -->
-                <a href="/docencia_qr/descargar-qrs" class="btn-secondary" id="btn-descargar-qrs">
-                    <span class="btn-icon-wrap"><i class="fa-solid fa-file-zipper"></i></span>
-                    Descargar QRs (ZIP)
-                </a>
-
-                <!-- Respaldar Base de Datos -->
-                <a href="/docencia_qr/respaldo-bd" class="btn-secondary" id="btn-respaldar-bd">
-                    <span class="btn-icon-wrap"><i class="fa-solid fa-database"></i></span>
-                    Respaldar Base de Datos
-                </a>
+                <!-- Acciones Condicionales de Administrador (Solo rol admin) -->
+                <?php if ($esAdmin): ?>
+                    <a href="<?= htmlspecialchars($baseUrl) ?>/usuarios" class="btn-action btn-action-admin" id="btnUsuarios" title="Gestión de usuarios y accesos (RBAC)">
+                        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span>Usuarios</span>
+                    </a>
+                    <a href="<?= htmlspecialchars($baseUrl) ?>/respaldo-bd" class="btn-action btn-action-admin" id="btnRespaldoBd" title="Generar copia de seguridad de la base de datos">
+                        <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                        <span>Respaldo BD</span>
+                    </a>
+                <?php endif; ?>
             </div>
-        </div>
+        </section>
 
-    </main><!-- /main-content -->
-</div><!-- /main-wrapper -->
-
-
-<!-- ═══════════════════════════════════════════════════════════════
-     MODAL: AÑADIR FUNCIONARIO (estilo iOS / macOS)
-     Actívalo con: document.getElementById('modal-funcionario').classList.add('open')
-════════════════════════════════════════════════════════════════ -->
-<div class="modal-backdrop" id="modal-funcionario" role="dialog" aria-modal="true"
-     aria-labelledby="modal-titulo" aria-describedby="modal-desc">
-
-    <div class="modal-card" id="modal-card-funcionario">
-
-        <!-- Cabecera del modal -->
-        <div class="modal-header">
-            <div class="modal-icon-wrap">
-                <i class="fa-solid fa-user-plus"></i>
-            </div>
-            <div>
-                <h2 class="modal-title" id="modal-titulo">Añadir Funcionario</h2>
-                <p class="modal-subtitle" id="modal-desc">Registro manual · Se generará un QR único automáticamente.</p>
-            </div>
-            <button class="modal-close" id="btn-modal-close" type="button" aria-label="Cerrar modal">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-
-        <!-- Formulario -->
-        <form id="form-registro-manual" novalidate autocomplete="off">
-
-            <div class="modal-body">
-
-                <!-- Cédula -->
-                <div class="field-group">
-                    <label class="field-label" for="campo-cedula">
-                        <i class="fa-solid fa-id-card"></i> Cédula de Identidad
-                    </label>
-                    <input class="field-input" type="text" id="campo-cedula" name="cedula"
-                           placeholder="Ej: V-12345678" maxlength="20" required
-                           inputmode="text" autocomplete="off">
-                    <span class="field-hint">Sin puntos ni guiones intermedios.</span>
-                </div>
-
-                <!-- Nombre Completo -->
-                <div class="field-group">
-                    <label class="field-label" for="campo-nombre">
-                        <i class="fa-solid fa-user"></i> Nombre Completo
-                    </label>
-                    <input class="field-input" type="text" id="campo-nombre" name="nombre"
-                           placeholder="Ej: María González Pérez" maxlength="150" required
-                           autocomplete="off">
-                </div>
-
-                <!-- Cargo -->
-                <div class="field-group">
-                    <label class="field-label" for="campo-cargo">
-                        <i class="fa-solid fa-briefcase"></i> Cargo
-                    </label>
-                    <input class="field-input" type="text" id="campo-cargo" name="cargo"
-                           placeholder="Ej: Docente de Matemáticas" maxlength="150" required
-                           autocomplete="off">
-                </div>
-
-                <!-- Departamento -->
-                <div class="field-group">
-                    <label class="field-label" for="campo-departamento">
-                        <i class="fa-solid fa-building"></i> Departamento
-                    </label>
-                    <input class="field-input" type="text" id="campo-departamento" name="departamento"
-                           placeholder="Ej: Ciencias Exactas" maxlength="150" required
-                           autocomplete="off">
-                </div>
-
-            </div><!-- /modal-body -->
-
-            <!-- Footer con acciones -->
-            <div class="modal-footer">
-                <button type="button" class="btn-modal-cancel" id="btn-modal-cancelar">
-                    Cancelar
-                </button>
-                <button type="submit" class="btn-modal-submit" id="btn-modal-submit">
-                    <span class="submit-icon"><i class="fa-solid fa-qrcode"></i></span>
-                    <span class="submit-text">Registrar y Generar QR</span>
-                    <span class="submit-loader" aria-hidden="true"></span>
-                </button>
-            </div>
-
-        </form>
-    </div><!-- /modal-card -->
-</div><!-- /modal-backdrop -->
-
-<!-- ═══════════════════════════════════════════════════════════════
-     MODAL: CARGA MASIVA EXCEL (estilo iOS / macOS)
-════════════════════════════════════════════════════════════════ -->
-<div class="modal-backdrop" id="modal-carga-masiva" role="dialog" aria-modal="true"
-     aria-labelledby="modal-excel-titulo" aria-describedby="modal-excel-desc">
-
-    <div class="modal-card" id="modal-card-excel">
-
-        <!-- Cabecera del modal -->
-        <div class="modal-header">
-            <div class="modal-icon-wrap" style="background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);">
-                <i class="fa-solid fa-file-excel"></i>
-            </div>
-            <div>
-                <h2 class="modal-title" id="modal-excel-titulo">Carga Masiva de Funcionarios</h2>
-                <p class="modal-subtitle" id="modal-excel-desc">Importación masiva (.xlsx) con generación de QR en lote.</p>
-            </div>
-            <button class="modal-close" id="btn-excel-close" type="button" aria-label="Cerrar modal">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-
-        <!-- Formulario Carga Masiva -->
-        <form id="formCargaMasiva" enctype="multipart/form-data" novalidate autocomplete="off">
-
-            <div class="modal-body">
-
-                <!-- Aviso de estructura -->
-                <div style="background: rgba(0, 113, 227, 0.06); border: 1px solid rgba(0, 113, 227, 0.15); border-radius: 12px; padding: 14px 16px; font-size: 13px; color: #1d1d1f; line-height: 1.5;">
-                    <div style="font-weight: 600; color: #0071e3; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-circle-info"></i> Estructura del Archivo
+        <!-- ── 3 Widgets de Métricas con Datos Reales ── -->
+        <section class="metrics-grid">
+            
+            <!-- Widget 1: Total Funcionarios -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-icon-wrap blue" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     </div>
-                    La fila 1 debe contener los encabezados: <strong>Cédula (A), Nombre (B), Cargo (C), Departamento (D)</strong>. Los registros se leerán a partir de la fila 2.
+                    <span class="metric-pill-tag tag-blue">Total Registrados</span>
                 </div>
-
-                <!-- Selector de archivo -->
-                <div class="field-group">
-                    <label class="field-label" for="campo-documento-excel">
-                        <i class="fa-solid fa-file-arrow-up"></i> Selecciona el Archivo Excel (.xlsx)
-                    </label>
-                    <input class="field-input" type="file" id="campo-documento-excel" name="documento_excel"
-                           accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
-                    <span class="field-hint">Solo formato .xlsx (Microsoft Excel OpenXML).</span>
-                </div>
-
-            </div><!-- /modal-body -->
-
-            <!-- Footer con acciones -->
-            <div class="modal-footer">
-                <button type="button" class="btn-modal-cancel" id="btn-excel-cancelar">
-                    Cancelar
-                </button>
-                <button type="submit" class="btn-modal-submit" id="btn-excel-submit" style="background: #10b981; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);">
-                    <span class="submit-icon"><i class="fa-solid fa-cloud-arrow-up"></i></span>
-                    <span class="submit-text">Procesar Archivo Excel</span>
-                    <span class="submit-loader" aria-hidden="true"></span>
-                </button>
+                <div class="metric-number"><?= number_format($totalFuncionarios) ?></div>
+                <div class="metric-label">Funcionarios en Sistema</div>
             </div>
 
-        </form>
-    </div><!-- /modal-card -->
-</div><!-- /modal-backdrop -->
+            <!-- Widget 2: Registrados Hoy -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-icon-wrap green" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    </div>
+                    <span class="metric-pill-tag tag-green">Hoy</span>
+                </div>
+                <div class="metric-number"><?= number_format($registradosHoy) ?></div>
+                <div class="metric-label">Registros Efectuados Hoy</div>
+            </div>
 
+            <!-- Widget 3: Certificados QR Generados -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-icon-wrap purple" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                    </div>
+                    <span class="metric-pill-tag tag-purple">Verificados</span>
+                </div>
+                <div class="metric-number"><?= number_format($totalFuncionarios) ?></div>
+                <div class="metric-label">Certificaciones QR Activas</div>
+            </div>
 
-<!-- ═══════════════════════════════
-     CSS DEL MODAL
-════════════════════════════════ -->
-<style>
-    /* ── Backdrop ── */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 900;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: rgba(10, 10, 20, 0.45);
-        backdrop-filter: blur(12px) saturate(160%);
-        -webkit-backdrop-filter: blur(12px) saturate(160%);
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
+        </section>
 
-    .modal-backdrop.open {
-        opacity: 1;
-        pointer-events: all;
-    }
+        <!-- ── Tabla Estilizada macOS: Últimos 5 Registros ── -->
+        <section class="table-card">
+            <div class="table-card-header">
+                <div>
+                    <h3 class="table-title">Últimos Funcionarios Registrados</h3>
+                    <p class="table-subtitle">Registros recientes integrados al sistema de verificación</p>
+                </div>
+                <span class="badge-count"><?= count($ultimosRegistros) ?> de 5 recientes</span>
+            </div>
 
-    /* ── Tarjeta modal ── */
-    .modal-card {
-        background: #ffffff;
-        border-radius: 24px;
-        width: 100%;
-        max-width: 520px;
-        box-shadow:
-            0 32px 80px rgba(0, 0, 0, 0.22),
-            0 8px 24px  rgba(0, 0, 0, 0.10),
-            0 0   0 1px rgba(255,255,255,0.08) inset;
-        transform: translateY(24px) scale(0.97);
-        transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    opacity  0.28s ease;
-        opacity: 0;
-        overflow: hidden;
-    }
+            <div class="table-responsive">
+                <?php if (empty($ultimosRegistros)): ?>
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        </div>
+                        <h3>No hay funcionarios registrados todavía</h3>
+                        <p>Utiliza el botón "Nuevo Registro" o "Carga Excel" para comenzar.</p>
+                    </div>
+                <?php else: ?>
+                    <table class="macos-table">
+                        <thead>
+                            <tr>
+                                <th>Cédula</th>
+                                <th>Funcionario / Cargo</th>
+                                <th>Departamento</th>
+                                <th>Fecha Registro</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($ultimosRegistros as $func): ?>
+                                <tr>
+                                    <td>
+                                        <span class="cedula-badge"><?= htmlspecialchars((string)($func['cedula'] ?? '—')) ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="funcionario-nombre"><?= htmlspecialchars((string)($func['nombre_completo'] ?? '—')) ?></span>
+                                        <span class="funcionario-cargo"><?= htmlspecialchars((string)($func['cargo'] ?? '—')) ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="departamento-tag"><?= htmlspecialchars((string)($func['departamento'] ?? '—')) ?></span>
+                                    </td>
+                                    <td>
+                                        <?= !empty($func['fecha_registro']) ? date('d/m/Y h:i A', strtotime((string)$func['fecha_registro'])) : 'Reciente' ?>
+                                    </td>
+                                    <td>
+                                        <span class="status-chip">
+                                            <span class="chip-dot"></span>
+                                            QR Emitido
+                                        </span>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
+            </div>
+        </section>
 
-    .modal-backdrop.open .modal-card {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
+    </main>
 
-    /* ── Header ── */
-    .modal-header {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 24px 24px 20px;
-        border-bottom: 1px solid rgba(0,0,0,0.06);
-    }
+    <!-- ── Modal: Nuevo Registro Manual ── -->
+    <div class="modal-overlay" id="modalRegistro" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 class="modal-head-title">Nuevo Registro de Funcionario</h3>
+                <button type="button" class="modal-close-btn" id="btnCerrarRegistro" aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <form id="formRegistroManual" autocomplete="off">
+                <div class="modal-body">
+                    <div class="modal-form-group">
+                        <label class="modal-label" for="reg_cedula">Cédula de Identidad</label>
+                        <input type="text" id="reg_cedula" name="cedula" class="modal-input" placeholder="Ej: V-12345678" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-label" for="reg_nombre">Nombre Completo</label>
+                        <input type="text" id="reg_nombre" name="nombre" class="modal-input" placeholder="Ej: Carlos Silva" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-label" for="reg_cargo">Cargo Institucional</label>
+                        <input type="text" id="reg_cargo" name="cargo" class="modal-input" placeholder="Ej: Oficial Docente" required>
+                    </div>
+                    <div class="modal-form-group">
+                        <label class="modal-label" for="reg_departamento">Departamento / Adscripción</label>
+                        <input type="text" id="reg_departamento" name="departamento" class="modal-input" placeholder="Ej: Dirección Académica" required>
+                    </div>
+                </div>
+                <div class="modal-foot">
+                    <button type="button" class="btn-modal-cancel" id="btnCancelarRegistro">Cancelar</button>
+                    <button type="submit" class="btn-modal-submit" id="btnGuardarRegistro">Guardar y Generar QR</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    .modal-icon-wrap {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #0071e3, #42a5f5);
-        color: white;
-        font-size: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 4px 12px rgba(0,113,227,0.35);
-    }
+    <!-- ── Modal: Carga Masiva Excel ── -->
+    <div class="modal-overlay" id="modalExcel" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 class="modal-head-title">Carga Masiva desde Excel</h3>
+                <button type="button" class="modal-close-btn" id="btnCerrarExcel" aria-label="Cerrar">
+                    <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <form id="formCargaExcel" enctype="multipart/form-data" autocomplete="off">
+                <div class="modal-body">
+                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
+                        El archivo <strong>.xlsx</strong> debe tener en la fila 1 los encabezados: <em>Cédula, Nombre, Cargo, Departamento</em>.
+                    </p>
+                    <div class="modal-form-group">
+                        <label class="modal-label" for="documento_excel">Seleccionar Archivo Excel (.xlsx)</label>
+                        <input type="file" id="documento_excel" name="documento_excel" class="modal-input" accept=".xlsx" required style="padding-top: 8px;">
+                    </div>
+                </div>
+                <div class="modal-foot">
+                    <button type="button" class="btn-modal-cancel" id="btnCancelarExcel">Cancelar</button>
+                    <button type="submit" class="btn-modal-submit" id="btnProcesarExcel">Importar y Procesar</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-    .modal-title {
-        font-size: 17px;
-        font-weight: 700;
-        color: #1d1d1f;
-        letter-spacing: -0.3px;
-        margin: 0;
-    }
+    <!-- ── Script de Modales y Fetch API ── -->
+    <script>
+    (function () {
+        'use strict';
 
-    .modal-subtitle {
-        font-size: 12px;
-        color: #a1a1a6;
-        margin: 3px 0 0;
-    }
+        const BASE_URL = '<?= $baseUrl ?>';
 
-    .modal-close {
-        margin-left: auto;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: none;
-        background: rgba(0,0,0,0.06);
-        color: #6e6e73;
-        font-size: 14px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        flex-shrink: 0;
-    }
+        // Elementos Modal Registro
+        const modalRegistro = document.getElementById('modalRegistro');
+        const btnNuevoRegistro = document.getElementById('btnNuevoRegistro');
+        const btnCerrarRegistro = document.getElementById('btnCerrarRegistro');
+        const btnCancelarRegistro = document.getElementById('btnCancelarRegistro');
+        const formRegistro = document.getElementById('formRegistroManual');
+        const btnGuardarRegistro = document.getElementById('btnGuardarRegistro');
 
-    .modal-close:hover {
-        background: rgba(255,59,48,0.12);
-        color: #ff3b30;
-    }
+        // Elementos Modal Excel
+        const modalExcel = document.getElementById('modalExcel');
+        const btnCargaExcel = document.getElementById('btnCargaExcel');
+        const btnCerrarExcel = document.getElementById('btnCerrarExcel');
+        const btnCancelarExcel = document.getElementById('btnCancelarExcel');
+        const formExcel = document.getElementById('formCargaExcel');
+        const btnProcesarExcel = document.getElementById('btnProcesarExcel');
 
-    /* ── Body / Campos ── */
-    .modal-body {
-        padding: 22px 24px 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
+        function toggleModal(modal, show) {
+            if (!modal) return;
+            modal.classList.toggle('active', show);
+            modal.setAttribute('aria-hidden', !show);
+            document.body.style.overflow = show ? 'hidden' : '';
+        }
 
-    .field-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
+        // Eventos Abrir/Cerrar
+        btnNuevoRegistro?.addEventListener('click', () => {
+            formRegistro?.reset();
+            toggleModal(modalRegistro, true);
+            document.getElementById('reg_cedula')?.focus();
+        });
+        btnCerrarRegistro?.addEventListener('click', () => toggleModal(modalRegistro, false));
+        btnCancelarRegistro?.addEventListener('click', () => toggleModal(modalRegistro, false));
 
-    .field-label {
-        font-size: 12px;
-        font-weight: 600;
-        color: #6e6e73;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
+        btnCargaExcel?.addEventListener('click', () => {
+            formExcel?.reset();
+            toggleModal(modalExcel, true);
+        });
+        btnCerrarExcel?.addEventListener('click', () => toggleModal(modalExcel, false));
+        btnCancelarExcel?.addEventListener('click', () => toggleModal(modalExcel, false));
 
-    .field-input {
-        width: 100%;
-        padding: 12px 14px;
-        border: 1.5px solid rgba(0,0,0,0.10);
-        border-radius: 12px;
-        font-size: 14px;
-        font-family: inherit;
-        color: #1d1d1f;
-        background: #f5f5f7;
-        outline: none;
-        transition: all 0.22s;
-        -webkit-appearance: none;
-    }
+        // Cerrar al pulsar fondo
+        [modalRegistro, modalExcel].forEach(modal => {
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) toggleModal(modal, false);
+            });
+        });
 
-    .field-input:focus {
-        border-color: #0071e3;
-        background: #ffffff;
-        box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
-    }
-
-    .field-input.is-invalid {
-        border-color: #ff3b30;
-        background: #fff5f5;
-        box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.12);
-    }
-
-    .field-input::placeholder { color: #c7c7cc; }
-
-    .field-hint {
-        font-size: 11px;
-        color: #a1a1a6;
-    }
-
-    /* ── Footer ── */
-    .modal-footer {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 10px;
-        padding: 20px 24px 24px;
-        border-top: 1px solid rgba(0,0,0,0.05);
-        margin-top: 10px;
-    }
-
-    .btn-modal-cancel {
-        padding: 11px 20px;
-        border: 1.5px solid rgba(0,0,0,0.10);
-        border-radius: 12px;
-        background: transparent;
-        color: #6e6e73;
-        font-size: 14px;
-        font-weight: 500;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .btn-modal-cancel:hover {
-        background: rgba(0,0,0,0.04);
-        border-color: rgba(0,0,0,0.18);
-    }
-
-    .btn-modal-submit {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 11px 22px;
-        border: none;
-        border-radius: 12px;
-        background: #0071e3;
-        color: white;
-        font-size: 14px;
-        font-weight: 600;
-        font-family: inherit;
-        cursor: pointer;
-        transition: all 0.25s;
-        box-shadow: 0 4px 14px rgba(0,113,227,0.35);
-        position: relative;
-        overflow: hidden;
-        min-width: 190px;
-        justify-content: center;
-    }
-
-    .btn-modal-submit:hover:not(:disabled) {
-        background: #0077ed;
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(0,113,227,0.42);
-    }
-
-    .btn-modal-submit:disabled {
-        background: #6e6e73;
-        cursor: not-allowed;
-        box-shadow: none;
-        transform: none;
-    }
-
-    .submit-icon {
-        width: 22px;
-        height: 22px;
-        background: rgba(255,255,255,0.18);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        flex-shrink: 0;
-    }
-
-    /* Spinner del botón */
-    .submit-loader {
-        display: none;
-        width: 16px;
-        height: 16px;
-        border: 2.5px solid rgba(255,255,255,0.35);
-        border-top-color: #ffffff;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-        flex-shrink: 0;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    .btn-modal-submit.loading .submit-icon,
-    .btn-modal-submit.loading .submit-text { display: none; }
-
-    .btn-modal-submit.loading .submit-loader { display: block; }
-    .btn-modal-submit.loading { min-width: 54px; padding: 11px 16px; }
-</style>
-
-
-<!-- ═══════════════════════════════════════════════════════════════
-     SCRIPTS: SweetAlert2 + Fetch AJAX para el formulario de registro
-════════════════════════════════════════════════════════════════ -->
-
-<!-- SweetAlert2 v11 CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-
-<script>
-(function () {
-    'use strict';
-
-    // ── Referencias DOM ───────────────────────────────────────────────────────
-    const modalBackdrop    = document.getElementById('modal-funcionario');
-    const btnAbrirModal    = document.getElementById('btn-anadir-funcionario');
-    const btnCerrarX       = document.getElementById('btn-modal-close');
-    const btnCancelar      = document.getElementById('btn-modal-cancelar');
-    const formRegistro     = document.getElementById('form-registro-manual');
-    const btnSubmit        = document.getElementById('btn-modal-submit');
-
-    // ── Abrir / Cerrar Modal ──────────────────────────────────────────────────
-    function abrirModal() {
-        modalBackdrop.classList.add('open');
-        document.body.style.overflow = 'hidden';
-        // Foco en el primer campo para accesibilidad
-        setTimeout(() => document.getElementById('campo-cedula')?.focus(), 320);
-    }
-
-    function cerrarModal() {
-        modalBackdrop.classList.remove('open');
-        document.body.style.overflow = '';
-        formRegistro.reset();
-        // Limpiar estados de error visuales
-        formRegistro.querySelectorAll('.field-input').forEach(el => el.classList.remove('is-invalid'));
-        // Restaurar botón
-        btnSubmit.classList.remove('loading');
-        btnSubmit.disabled = false;
-    }
-
-    btnAbrirModal?.addEventListener('click', abrirModal);
-    btnCerrarX?.addEventListener('click', cerrarModal);
-    btnCancelar?.addEventListener('click', cerrarModal);
-
-    // Cerrar al hacer clic en el fondo del backdrop
-    modalBackdrop?.addEventListener('click', (e) => {
-        if (e.target === modalBackdrop) cerrarModal();
-    });
-
-    // Cerrar con Escape
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && modalBackdrop.classList.contains('open')) cerrarModal();
-    });
-
-    // ── Validación cliente ────────────────────────────────────────────────────
-    function validarCampos() {
-        let valido = true;
-        const campos = formRegistro.querySelectorAll('[required]');
-
-        campos.forEach(campo => {
-            if (!campo.value.trim()) {
-                campo.classList.add('is-invalid');
-                valido = false;
-            } else {
-                campo.classList.remove('is-invalid');
+        // Cerrar con Escape
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                toggleModal(modalRegistro, false);
+                toggleModal(modalExcel, false);
             }
         });
 
-        return valido;
-    }
+        // ── Envío Formulario Registro Manual ──
+        formRegistro?.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-    // ── Envío AJAX via Fetch API ──────────────────────────────────────────────
-    formRegistro?.addEventListener('submit', async (e) => {
-        e.preventDefault();
+            const cedula = document.getElementById('reg_cedula').value.trim();
+            const nombre = document.getElementById('reg_nombre').value.trim();
+            const cargo = document.getElementById('reg_cargo').value.trim();
+            const departamento = document.getElementById('reg_departamento').value.trim();
 
-        if (!validarCampos()) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Campos incompletos',
-                text: 'Por favor completa todos los campos antes de continuar.',
-                confirmButtonColor: '#0071e3',
-                confirmButtonText: 'Entendido',
-                borderRadius: '18px',
-                customClass: {
-                    popup: 'swal-ios-popup',
-                    confirmButton: 'swal-ios-btn',
-                },
-            });
-            return;
-        }
-
-        // ── Estado de carga en el botón ───────────────────────────────────
-        btnSubmit.classList.add('loading');
-        btnSubmit.disabled = true;
-
-        const formData = new FormData(formRegistro);
-
-        try {
-            const response = await fetch('/docencia_qr/registro-manual', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-
-            // Verificar que la respuesta es JSON válido
-            const contentType = response.headers.get('content-type') ?? '';
-            if (!contentType.includes('application/json')) {
-                throw new Error(`Respuesta inesperada del servidor (${response.status}).`);
-            }
-
-            const data = await response.json();
-
-            if (data.exito) {
-                cerrarModal();
-
-                // ── Alerta de ÉXITO con QR embebido en Base64 (sin ruta web) ──
-                await Swal.fire({
-                    icon: 'success',
-                    title: '¡Registro exitoso!',
-                    html: `<p style="color:#6e6e73;font-size:14px;margin:0 0 4px">
-                               ${data.mensaje ?? 'El funcionario fue registrado correctamente.'}
-                           </p>
-                           <p style="color:#a1a1a6;font-size:12px;margin:0">
-                               Escanea el QR para validar el certificado.
-                           </p>`,
-                    // imageUrl acepta Data URIs base64 → sin ruta web ni .htaccess
-                    imageUrl:    data.qr_base64 ?? null,
-                    imageWidth:  180,
-                    imageHeight: 180,
-                    imageAlt:    'Código QR del funcionario',
-                    showDenyButton:    !!data.qr_base64,
-                    denyButtonText:    '<i class="fa-solid fa-download" style="margin-right:6px"></i>Descargar QR',
-                    denyButtonColor:   '#6e6e73',
-                    confirmButtonText:  'Perfecto',
-                    confirmButtonColor: '#0071e3',
-                    // Al pulsar "Descargar QR" descarga el PNG desde Base64 sin recargar
-                    preDeny: () => {
-                        if (data.qr_base64) {
-                            const link    = document.createElement('a');
-                            link.href     = data.qr_base64;
-                            link.download = `qr_funcionario_${(data.token ?? 'ispeb').slice(0, 8)}.png`;
-                            link.click();
-                        }
-                        return false; // Mantiene el modal abierto tras descargar
-                    },
-                });
-
-
-            } else {
-                // ── Alerta de ERROR (cédula duplicada u otro) ─────────────
-                const esDuplicado = (data.mensaje ?? '').toLowerCase().includes('cédula');
-
+            if (!cedula || !nombre || !cargo || !departamento) {
                 Swal.fire({
-                    icon: esDuplicado ? 'warning' : 'error',
-                    title: esDuplicado ? 'Cédula duplicada' : 'Error al registrar',
-                    text: data.mensaje ?? 'Ocurrió un error al procesar la solicitud.',
-                    confirmButtonText: 'Aceptar',
-                    confirmButtonColor: esDuplicado ? '#f59e0b' : '#ff3b30',
+                    title: 'Campos requeridos',
+                    text: 'Por favor completa todos los campos del funcionario.',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido',
+                    customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                    buttonsStyling: false
                 });
+                return;
             }
 
-        } catch (err) {
-            console.error('[ISPEB] Error en fetch registro-manual:', err);
+            btnGuardarRegistro.disabled = true;
+            btnGuardarRegistro.textContent = 'Guardando…';
 
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de conexión',
-                text: 'No se pudo comunicar con el servidor. Verifica tu conexión e inténtalo nuevamente.',
-                confirmButtonText: 'Aceptar',
-                confirmButtonColor: '#ff3b30',
-            });
-        } finally {
-            // ── Restaurar botón siempre ───────────────────────────────────
-            btnSubmit.classList.remove('loading');
-            btnSubmit.disabled = false;
-        }
-    });
+            try {
+                const formData = new FormData();
+                formData.append('cedula', cedula);
+                formData.append('nombre', nombre);
+                formData.append('cargo', cargo);
+                formData.append('departamento', departamento);
 
-    // ── Limpiar marcas de error al escribir ───────────────────────────────────
-    formRegistro?.querySelectorAll('.field-input').forEach(campo => {
-        campo.addEventListener('input', () => campo.classList.remove('is-invalid'));
-    });
+                const res = await fetch(BASE_URL + '/registro-manual', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
 
-    // ══════════════════════════════════════════════════════════════════════════
-    // MODAL Y CARGA MASIVA EXCEL (#formCargaMasiva)
-    // ══════════════════════════════════════════════════════════════════════════
-    const modalExcelBackdrop = document.getElementById('modal-carga-masiva');
-    const btnAbrirExcel      = document.getElementById('btn-carga-masiva');
-    const btnCerrarExcelX    = document.getElementById('btn-excel-close');
-    const btnCancelarExcel   = document.getElementById('btn-excel-cancelar');
-    const formCargaMasiva    = document.getElementById('formCargaMasiva');
-    const btnSubmitExcel     = document.getElementById('btn-excel-submit');
+                const data = await res.json();
 
-    function abrirModalExcel() {
-        modalExcelBackdrop?.classList.add('open');
-        document.body.style.overflow = 'hidden';
-    }
+                if (data.exito) {
+                    toggleModal(modalRegistro, false);
 
-    function cerrarModalExcel() {
-        modalExcelBackdrop?.classList.remove('open');
-        document.body.style.overflow = '';
-        formCargaMasiva?.reset();
-        btnSubmitExcel?.classList.remove('loading');
-        if (btnSubmitExcel) btnSubmitExcel.disabled = false;
-    }
+                    // Diálogo con visualización del QR generado y descarga
+                    await Swal.fire({
+                        title: '¡Funcionario Registrado!',
+                        html: `
+                            <p style="color:#6e6e73;font-size:0.86rem;margin-bottom:12px;">El certificado y código QR han sido generados con éxito.</p>
+                            ${data.qr_base64 ? `<img src="${data.qr_base64}" alt="Código QR" style="width:160px;height:160px;border-radius:12px;margin:8px auto;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.1)">` : ''}
+                        `,
+                        icon: 'success',
+                        confirmButtonText: 'Actualizar Dashboard',
+                        customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                        buttonsStyling: false
+                    });
 
-    btnAbrirExcel?.addEventListener('click', abrirModalExcel);
-    btnCerrarExcelX?.addEventListener('click', cerrarModalExcel);
-    btnCancelarExcel?.addEventListener('click', cerrarModalExcel);
-
-    modalExcelBackdrop?.addEventListener('click', (e) => {
-        if (e.target === modalExcelBackdrop) cerrarModalExcel();
-    });
-
-    // Interceptar envío del formulario de Excel con Fetch API
-    formCargaMasiva?.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const inputArchivo = document.getElementById('campo-documento-excel') || formCargaMasiva.querySelector('input[name="documento_excel"]');
-        if (!inputArchivo || !inputArchivo.files || inputArchivo.files.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Archivo no seleccionado',
-                text: 'Por favor selecciona un archivo Excel (.xlsx) antes de continuar.',
-                confirmButtonColor: '#0071e3',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-
-        const archivo = inputArchivo.files[0];
-        if (!archivo.name.toLowerCase().endsWith('.xlsx')) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Formato no permitido',
-                text: 'El archivo seleccionado debe tener extensión .xlsx.',
-                confirmButtonColor: '#ff3b30',
-                confirmButtonText: 'Aceptar'
-            });
-            return;
-        }
-
-        // 1. Mostrar SweetAlert de procesamiento sin permitir cierre
-        Swal.fire({
-            title: 'Procesando archivo, no cierre la ventana...',
-            html: '<p style="color:#6e6e73;font-size:14px;margin-top:8px">Cargando funcionarios a la base de datos y generando códigos QR institucionales...</p>',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        // 2. Preparar FormData
-        const formData = new FormData(formCargaMasiva);
-
-        // Ruta de envío
-        const rutaEndpoint = window.location.pathname.includes('/docencia_qr')
-            ? '/docencia_qr/registro-excel'
-            : '/registro-excel';
-
-        try {
-            // 3. Envío asíncrono con Fetch API
-            const response = await fetch(rutaEndpoint, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    window.location.reload();
+                } else {
+                    Swal.fire({
+                        title: 'Error al registrar',
+                        text: data.mensaje || 'No se pudo completar el registro del funcionario.',
+                        icon: 'error',
+                        confirmButtonText: 'Revisar datos',
+                        customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                        buttonsStyling: false
+                    });
                 }
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: 'Ocurrió un fallo de red al comunicar con el servidor.',
+                    icon: 'error',
+                    confirmButtonText: 'Cerrar',
+                    customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                    buttonsStyling: false
+                });
+            } finally {
+                btnGuardarRegistro.disabled = false;
+                btnGuardarRegistro.textContent = 'Guardar y Generar QR';
+            }
+        });
+
+        // ── Envío Carga Masiva Excel ──
+        formExcel?.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('documento_excel');
+            if (!fileInput.files.length) {
+                Swal.fire({
+                    title: 'Archivo requerido',
+                    text: 'Selecciona un archivo .xlsx para procesar la importación.',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido',
+                    customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                    buttonsStyling: false
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Procesando archivo...',
+                text: 'Importando funcionarios y generando códigos QR en lote.',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading(),
+                customClass: { popup: 'apple-modal' }
             });
 
-            const data = await response.json();
+            const formData = new FormData(formExcel);
 
-            // 4. Mostrar resumen devuelto por el servidor
-            if (data.estado === 'success') {
-                cerrarModalExcel();
-                await Swal.fire({
-                    icon: 'success',
-                    title: '¡Carga Completada!',
-                    text: data.mensaje,
-                    confirmButtonColor: '#0071e3',
-                    confirmButtonText: 'Aceptar'
+            try {
+                const res = await fetch(BASE_URL + '/registro-excel', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
-            } else {
+
+                const data = await res.json();
+
+                if (data.estado === 'success') {
+                    toggleModal(modalExcel, false);
+                    await Swal.fire({
+                        title: '¡Carga Completada!',
+                        text: data.mensaje,
+                        icon: 'success',
+                        confirmButtonText: 'Continuar',
+                        customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                        buttonsStyling: false
+                    });
+                    window.location.reload();
+                } else {
+                    Swal.fire({
+                        title: 'Fallo en la importación',
+                        text: data.mensaje || 'Error al procesar el archivo Excel.',
+                        icon: 'error',
+                        confirmButtonText: 'Aceptar',
+                        customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                        buttonsStyling: false
+                    });
+                }
+            } catch (err) {
+                console.error(err);
                 Swal.fire({
+                    title: 'Error de Procesamiento',
+                    text: 'No se pudo completar la carga masiva. Verifica el formato del archivo.',
                     icon: 'error',
-                    title: 'Error en la carga masiva',
-                    text: data.mensaje || 'Ocurrió un error al procesar el archivo Excel.',
-                    confirmButtonColor: '#ff3b30',
-                    confirmButtonText: 'Aceptar'
+                    confirmButtonText: 'Cerrar',
+                    customClass: { popup: 'apple-modal', confirmButton: 'apple-btn' },
+                    buttonsStyling: false
                 });
             }
-        } catch (error) {
-            console.error('[ISPEB] Error en fetch registro-excel:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error de conexión',
-                text: 'No se pudo comunicar con el servidor o el archivo causó un fallo inesperado.',
-                confirmButtonColor: '#ff3b30',
-                confirmButtonText: 'Aceptar'
-            });
-        }
-    });
+        });
 
-})();
-</script>
-
+    })();
+    </script>
 </body>
 </html>

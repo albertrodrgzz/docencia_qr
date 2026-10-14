@@ -1,488 +1,696 @@
+<?php
+/**
+ * Vista de Inicio de Sesión — ISPEB Sistema Institucional de Certificaciones
+ * Diseño Hiper-minimalista inspirado en macOS / iOS (Glassmorphism, SF Pro, Apple HIG)
+ */
+
+$baseUrl = (isset($_SERVER['REQUEST_URI']) && str_starts_with($_SERVER['REQUEST_URI'], '/docencia_qr')) 
+    ? '/docencia_qr' 
+    : '';
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#f5f5f7">
     <meta name="description" content="Acceso al Sistema de Certificación Institucional ISPEB">
-    <title>Iniciar Sesión — ISPEB Certificaciones</title>
+    <title>Iniciar Sesión — ISPEB</title>
 
-    <!-- SweetAlert2 -->
+    <!-- SweetAlert2 para notificaciones fluidas -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        /* ── Reset y base ── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+        /* ── Variables de Diseño Apple macOS / iOS ── */
         :root {
-            --apple-blue:     #007AFF;
-            --apple-blue-dk:  #0062CC;
-            --apple-red:      #FF3B30;
-            --apple-gray:     #8e8e93;
-            --apple-bg:       #f5f5f7;
-            --apple-border:   #d2d2d7;
-            --apple-text:     #1d1d1f;
-            --apple-subtext:  #6e6e73;
-            --card-shadow:    0 10px 30px rgba(0, 0, 0, 0.05);
-            --font:           -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Helvetica, Arial, sans-serif;
+            --apple-blue: #0071e3;
+            --apple-blue-hover: #0077ed;
+            --apple-blue-active: #005bb5;
+            --apple-focus-ring: rgba(0, 113, 227, 0.22);
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --text-tertiary: #a1a1a6;
+            --glass-bg: rgba(255, 255, 255, 0.62);
+            --glass-border: rgba(255, 255, 255, 0.75);
+            --input-bg: rgba(0, 0, 0, 0.035);
+            --input-border: rgba(0, 0, 0, 0.07);
+            --input-bg-focus: rgba(255, 255, 255, 0.95);
+            --card-radius: 24px;
+            --control-radius: 13px;
+            --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --shadow-subtle: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+            --shadow-float: 0 20px 48px -10px rgba(0, 0, 0, 0.08), 0 0 1px 1px rgba(255, 255, 255, 0.6) inset;
+        }
+
+        /* ── Reset y Base ── */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
         }
 
         html, body {
-            height: 100%;
-            font-family: var(--font);
-            background-color: var(--apple-bg);
-            color: var(--apple-text);
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* ── Layout centrado ── */
-        .page-wrapper {
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 24px 16px;
-            gap: 28px;
-        }
-
-        /* ── Encabezado institucional ── */
-        .brand-header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            text-align: center;
-        }
-
-        .brand-icon {
-            width: 64px;
-            height: 64px;
-            background: var(--apple-blue);
-            border-radius: 16px;
+            font-family: var(--font-family);
+            background-color: #f5f5f7;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.30);
         }
 
-        .brand-icon svg {
-            width: 34px;
-            height: 34px;
-            fill: #fff;
+        /* ── Fondo abstracto dinámico estilo Apple Sonoma / Sequoia ── */
+        .ambient-canvas {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+            background: 
+                radial-gradient(circle at 18% 22%, rgba(206, 226, 255, 0.65) 0%, transparent 45%),
+                radial-gradient(circle at 82% 18%, rgba(228, 219, 255, 0.55) 0%, transparent 48%),
+                radial-gradient(circle at 50% 88%, rgba(210, 238, 255, 0.6) 0%, transparent 52%),
+                radial-gradient(circle at 85% 85%, rgba(243, 230, 255, 0.5) 0%, transparent 45%),
+                #f5f5f7;
         }
 
-        .brand-name {
-            font-size: 1.05rem;
-            font-weight: 600;
-            letter-spacing: -0.01em;
-            color: var(--apple-text);
+        .ambient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: orbFloat 18s ease-in-out infinite alternate;
         }
 
-        .brand-sub {
-            font-size: 0.80rem;
-            color: var(--apple-subtext);
-            font-weight: 400;
+        .orb-1 {
+            width: 380px;
+            height: 380px;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            top: 5%;
+            left: 15%;
         }
 
-        /* ── Tarjeta principal ── */
+        .orb-2 {
+            width: 440px;
+            height: 440px;
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            bottom: 8%;
+            right: 12%;
+            animation-duration: 22s;
+            animation-delay: -5s;
+        }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(25px, -30px) scale(1.06); }
+            100% { transform: translate(-20px, 20px) scale(0.96); }
+        }
+
+        /* ── Contenedor Principal Centrado ── */
+        .main-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 410px;
+            padding: 24px 20px;
+            margin: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ── Tarjeta Glassmorphism Apple ── */
         .login-card {
             width: 100%;
-            max-width: 420px;
-            background: #ffffff;
-            border-radius: 20px;
-            box-shadow: var(--card-shadow);
-            padding: 40px 36px 36px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px) saturate(190%);
+            -webkit-backdrop-filter: blur(30px) saturate(190%);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow-float);
+            padding: 38px 34px 34px;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+            animation: cardAppear 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
-        .login-card__title {
-            font-size: 1.50rem;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            color: var(--apple-text);
-            margin-bottom: 4px;
+        @keyframes cardAppear {
+            0% {
+                opacity: 0;
+                transform: translateY(24px) scale(0.97);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
-        .login-card__subtitle {
-            font-size: 0.875rem;
-            color: var(--apple-subtext);
+        /* Efecto Shake estilo macOS al fallar contraseña */
+        .shake-animation {
+            animation: macShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+        }
+
+        @keyframes macShake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* ── Cabecera de la Tarjeta e Isotipo ── */
+        .card-header {
+            text-align: center;
             margin-bottom: 28px;
-            font-weight: 400;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        /* ── Grupos de campo ── */
-        .form-group {
+        .app-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #0077ed 0%, #0051c6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            box-shadow: 0 6px 16px rgba(0, 119, 237, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.4);
             margin-bottom: 16px;
+            transition: transform 0.2s ease;
+        }
+
+        .app-icon:hover {
+            transform: scale(1.03);
+        }
+
+        .app-icon svg {
+            width: 30px;
+            height: 30px;
+            fill: currentColor;
+        }
+
+        .brand-title {
+            font-size: 1.45rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .brand-subtitle {
+            margin-top: 5px;
+            font-size: 0.86rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+            letter-spacing: -0.01em;
+        }
+
+        /* ── Campos del Formulario ── */
+        .form-group {
+            margin-bottom: 18px;
+            position: relative;
         }
 
         .form-label {
             display: block;
             font-size: 0.78rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--apple-subtext);
+            font-weight: 500;
+            color: var(--text-secondary);
             margin-bottom: 7px;
+            margin-left: 2px;
+            letter-spacing: -0.01em;
         }
 
-        .input-wrapper {
+        .input-container {
             position: relative;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--apple-gray);
             display: flex;
             align-items: center;
-            pointer-events: none;
         }
 
-        .input-icon svg {
-            width: 18px;
-            height: 18px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 1.8;
+        .input-leading-icon {
+            position: absolute;
+            left: 14px;
+            color: var(--text-tertiary);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease;
+        }
+
+        .input-leading-icon svg {
+            width: 17px;
+            height: 17px;
+            stroke-width: 2;
         }
 
         .form-input {
             width: 100%;
-            padding: 12px 14px 12px 42px;
-            font-family: var(--font);
-            font-size: 0.95rem;
-            color: var(--apple-text);
-            background: #f5f5f7;
-            border: 1.5px solid var(--apple-border);
-            border-radius: 12px;
+            height: 46px;
+            padding: 0 14px 0 42px;
+            font-family: var(--font-family);
+            font-size: 0.92rem;
+            color: var(--text-primary);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: var(--control-radius);
             outline: none;
-            transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             -webkit-appearance: none;
         }
 
-        .form-input::placeholder { color: #aeaeb2; }
-
-        .form-input:focus {
-            border-color: var(--apple-blue);
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+        .form-input::placeholder {
+            color: var(--text-tertiary);
+            font-weight: 400;
         }
 
-        /* ── Toggle contraseña ── */
-        #btn-toggle-pass {
+        .form-input:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+
+        /* Focus Apple: anillo azul brillante y fondo blanco puro */
+        .form-input:focus {
+            background: var(--input-bg-focus);
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 3.5px var(--apple-focus-ring);
+        }
+
+        .form-input:focus ~ .input-leading-icon {
+            color: var(--apple-blue);
+        }
+
+        /* ── Botón Mostrar/Ocultar Contraseña ── */
+        .password-toggle-btn {
             position: absolute;
-            right: 14px;
+            right: 10px;
             top: 50%;
             transform: translateY(-50%);
-            background: none;
+            background: transparent;
             border: none;
+            color: var(--text-tertiary);
+            padding: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            color: var(--apple-gray);
             display: flex;
-            padding: 4px;
-            border-radius: 6px;
-            transition: color 0.15s;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, background 0.15s ease;
         }
 
-        #btn-toggle-pass:hover { color: var(--apple-blue); }
-        #btn-toggle-pass svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; }
-
-        /* ── Botón primario ── */
-        .btn-primary {
-            width: 100%;
-            padding: 14px;
-            margin-top: 24px;
-            font-family: var(--font);
-            font-size: 1rem;
-            font-weight: 600;
-            color: #ffffff;
-            background: var(--apple-blue);
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            letter-spacing: -0.01em;
-            transition: background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
-            box-shadow: 0 4px 14px rgba(0, 122, 255, 0.30);
-            position: relative;
-            overflow: hidden;
+        .password-toggle-btn:hover {
+            color: var(--text-primary);
+            background: rgba(0, 0, 0, 0.04);
         }
 
-        .btn-primary:hover:not(:disabled) {
-            background: var(--apple-blue-dk);
-            box-shadow: 0 6px 18px rgba(0, 98, 204, 0.35);
-        }
-
-        .btn-primary:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-
-        .btn-primary:disabled {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-
-        .btn-primary .btn-spinner {
-            display: none;
+        .password-toggle-btn svg {
             width: 18px;
             height: 18px;
-            border: 2px solid rgba(255,255,255,0.4);
-            border-top-color: #fff;
+            stroke-width: 1.8;
+            stroke: currentColor;
+            fill: none;
+        }
+
+        /* ── Botón Submit Estilo iOS ── */
+        .btn-submit {
+            width: 100%;
+            height: 46px;
+            margin-top: 10px;
+            background: var(--apple-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--control-radius);
+            font-family: var(--font-family);
+            font-size: 0.94rem;
+            font-weight: 600;
+            letter-spacing: -0.015em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.22);
+            transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: var(--apple-blue-hover);
+            box-shadow: 0 6px 16px rgba(0, 113, 227, 0.3);
+            transform: translateY(-0.5px);
+        }
+
+        .btn-submit:active:not(:disabled) {
+            background: var(--apple-blue-active);
+            transform: scale(0.985);
+            box-shadow: 0 2px 6px rgba(0, 113, 227, 0.2);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Spinner estilo iOS */
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            border-top-color: #ffffff;
             border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            vertical-align: middle;
-            margin-right: 6px;
+            animation: spin 0.65s linear infinite;
         }
 
-        .btn-primary.loading .btn-spinner { display: inline-block; }
-        .btn-primary.loading .btn-text    { opacity: 0.8; }
+        .btn-submit.loading .spinner {
+            display: block;
+        }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .btn-submit.loading .btn-text {
+            opacity: 0.85;
+        }
 
-        /* ── Footer de la tarjeta ── */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Pie de Tarjeta ── */
         .card-footer {
-            margin-top: 20px;
+            margin-top: 24px;
             text-align: center;
-            font-size: 0.75rem;
-            color: var(--apple-subtext);
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
         }
 
-        /* ── Footer de página ── */
-        .page-footer {
+        .card-footer a {
+            color: var(--apple-blue);
+            text-decoration: none;
+            transition: underline 0.15s ease;
+        }
+
+        .card-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Pie de Página ── */
+        .footer-note {
+            margin-top: 24px;
             font-size: 0.72rem;
-            color: var(--apple-subtext);
+            color: var(--text-tertiary);
             text-align: center;
+            letter-spacing: -0.01em;
+            animation: cardAppear 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
-        /* ── Animación de entrada ── */
-        .login-card {
-            animation: slideUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+        /* ── Estilos personalizados para SweetAlert2 macOS ── */
+        .swal2-popup.apple-modal {
+            border-radius: 20px !important;
+            padding: 24px !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            backdrop-filter: blur(25px) !important;
+            -webkit-backdrop-filter: blur(25px) !important;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.12) !important;
+            font-family: var(--font-family) !important;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(22px); }
-            to   { opacity: 1; transform: translateY(0); }
+        .swal2-title {
+            font-size: 1.15rem !important;
+            font-weight: 600 !important;
+            color: var(--text-primary) !important;
         }
 
-        /* ── Responsive ── */
-        @media (max-width: 480px) {
-            .login-card { padding: 32px 24px 28px; border-radius: 16px; }
-            .login-card__title { font-size: 1.3rem; }
+        .swal2-html-container {
+            font-size: 0.88rem !important;
+            color: var(--text-secondary) !important;
+            margin-top: 6px !important;
+        }
+
+        .swal2-confirm.apple-btn {
+            background-color: var(--apple-blue) !important;
+            border-radius: 10px !important;
+            padding: 10px 24px !important;
+            font-size: 0.88rem !important;
+            font-weight: 500 !important;
+            box-shadow: none !important;
+        }
+
+        /* ── Modo Responsivo ── */
+        @media (max-width: 440px) {
+            .login-card {
+                padding: 30px 22px 26px;
+                border-radius: 20px;
+            }
+
+            .brand-title {
+                font-size: 1.35rem;
+            }
         }
     </style>
 </head>
 <body>
 
-<div class="page-wrapper">
-
-    <!-- ── Encabezado institucional ── -->
-    <div class="brand-header">
-        <div class="brand-icon" aria-hidden="true">
-            <!-- Ícono certificado/sello -->
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2L3 6v6c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V6L12 2zm-1.5 13.5L7 12l1.5-1.5 2 2 5-5 1.5 1.5-6.5 6.5z"/>
-            </svg>
-        </div>
-        <div>
-            <p class="brand-name">ISPEB</p>
-            <p class="brand-sub">Sistema Institucional de Certificaciones</p>
-        </div>
+    <!-- Lienzo con orbes de fondo -->
+    <div class="ambient-canvas" aria-hidden="true">
+        <div class="ambient-orb orb-1"></div>
+        <div class="ambient-orb orb-2"></div>
     </div>
 
-    <!-- ── Tarjeta de login ── -->
-    <div class="login-card" role="main">
-        <h1 class="login-card__title">Bienvenido</h1>
-        <p class="login-card__subtitle">Ingresa tus credenciales institucionales para continuar.</p>
-
-        <form id="form-login" novalidate>
-
-            <!-- Campo: Correo -->
-            <div class="form-group">
-                <label class="form-label" for="correo">Correo electrónico</label>
-                <div class="input-wrapper">
-                    <span class="input-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7L22 7"/></svg>
-                    </span>
-                    <input
-                        type="email"
-                        id="correo"
-                        name="correo"
-                        class="form-input"
-                        placeholder="usuario@ispeb.gob.ve"
-                        autocomplete="email"
-                        required
-                    >
+    <!-- Envoltorio principal -->
+    <main class="main-wrapper">
+        <div class="login-card" id="loginCard">
+            
+            <!-- Encabezado Institucional -->
+            <div class="card-header">
+                <div class="app-icon" aria-hidden="true">
+                    <!-- Ícono de Seguridad y Certificado -->
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 16l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/>
+                    </svg>
                 </div>
+                <h1 class="brand-title">ISPEB</h1>
+                <p class="brand-subtitle">Sistema Institucional de Certificaciones</p>
             </div>
 
-            <!-- Campo: Contraseña -->
-            <div class="form-group">
-                <label class="form-label" for="password">Contraseña</label>
-                <div class="input-wrapper">
-                    <span class="input-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
-                    </span>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        class="form-input"
-                        placeholder="••••••••"
-                        autocomplete="current-password"
-                        required
-                    >
-                    <button type="button" id="btn-toggle-pass" aria-label="Mostrar u ocultar contraseña">
-                        <!-- Ojo abierto -->
-                        <svg id="icon-eye-open" viewBox="0 0 24 24"><path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
-                        <!-- Ojo cerrado (oculto por defecto) -->
-                        <svg id="icon-eye-closed" viewBox="0 0 24 24" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.4 18.4 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07A3 3 0 019.12 9.1"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    </button>
+            <!-- Formulario de Autenticación -->
+            <form id="form-login" action="<?= htmlspecialchars($baseUrl) ?>/login" method="POST" novalidate autocomplete="on">
+                
+                <!-- Correo Institucional -->
+                <div class="form-group">
+                    <label class="form-label" for="correo">Correo electrónico</label>
+                    <div class="input-container">
+                        <span class="input-leading-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="2" y="4" width="20" height="16" rx="3"></rect>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                            </svg>
+                        </span>
+                        <input
+                            type="email"
+                            id="correo"
+                            name="correo"
+                            class="form-input"
+                            placeholder="usuario@ispeb.gob.ve"
+                            autocomplete="email"
+                            required
+                            spellcheck="false"
+                            autofocus
+                        >
+                    </div>
                 </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label class="form-label" for="password">Contraseña</label>
+                    <div class="input-container">
+                        <span class="input-leading-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                        </span>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            placeholder="••••••••••••"
+                            autocomplete="current-password"
+                            required
+                        >
+                        <button type="button" id="btnTogglePass" class="password-toggle-btn" aria-label="Mostrar u ocultar contraseña" tabindex="-1">
+                            <svg id="eyeOpenIcon" viewBox="0 0 24 24">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <svg id="eyeClosedIcon" viewBox="0 0 24 24" style="display: none;">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07A3 3 0 1 1 12 15a3 3 0 0 1-2.88-2.88"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botón de Envío -->
+                <button type="submit" id="btnSubmit" class="btn-submit">
+                    <span class="spinner" aria-hidden="true"></span>
+                    <span class="btn-text">Iniciar sesión</span>
+                </button>
+
+            </form>
+
+            <div class="card-footer">
+                <p>¿Olvidaste tu contraseña o requieres soporte?<br>Contacta a la Oficina de Tecnología y Sistemas.</p>
             </div>
-
-            <!-- Botón submit -->
-            <button type="submit" id="btn-ingresar" class="btn-primary">
-                <span class="btn-spinner" aria-hidden="true"></span>
-                <span class="btn-text">Ingresar al sistema</span>
-            </button>
-
-        </form>
-
-        <div class="card-footer">
-            <p>¿Problemas para ingresar? Contacta al administrador del sistema.</p>
         </div>
-    </div>
 
-    <!-- ── Footer de página ── -->
-    <footer class="page-footer">
-        <p>© <?= date('Y') ?> ISPEB · Todos los derechos reservados</p>
-    </footer>
+        <footer class="footer-note">
+            <p>© <?= date('Y') ?> Instituto Autónomo de Policía del Estado Bolívar · ISPEB</p>
+        </footer>
+    </main>
 
-</div>
+    <!-- ── Lógica Frontend (Fetch asíncrono con fallback y feedback háptico) ── -->
+    <script>
+    (function () {
+        'use strict';
 
-<!-- ── Script de login con Fetch API ── -->
-<script>
-(function () {
-    'use strict';
+        const BASE_URL      = '<?= $baseUrl ?>';
+        const formLogin     = document.getElementById('form-login');
+        const loginCard     = document.getElementById('loginCard');
+        const btnSubmit     = document.getElementById('btnSubmit');
+        const inputCorreo   = document.getElementById('correo');
+        const inputPassword = document.getElementById('password');
+        const btnTogglePass = document.getElementById('btnTogglePass');
+        const eyeOpenIcon   = document.getElementById('eyeOpenIcon');
+        const eyeClosedIcon = document.getElementById('eyeClosedIcon');
 
-    const BASE_URL    = '/docencia_qr';
-    const formLogin   = document.getElementById('form-login');
-    const btnIngresar = document.getElementById('btn-ingresar');
-    const inputPass   = document.getElementById('password');
-    const btnToggle   = document.getElementById('btn-toggle-pass');
-    const iconOpen    = document.getElementById('icon-eye-open');
-    const iconClosed  = document.getElementById('icon-eye-closed');
-
-    // ── Toggle visibilidad de contraseña ────────────────────────────────────
-    btnToggle.addEventListener('click', () => {
-        const isPassword = inputPass.type === 'password';
-        inputPass.type   = isPassword ? 'text' : 'password';
-        iconOpen.style.display   = isPassword ? 'none'  : 'block';
-        iconClosed.style.display = isPassword ? 'block' : 'none';
-    });
-
-    // ── Interceptar submit del formulario ───────────────────────────────────
-    formLogin.addEventListener('submit', async function (e) {
-        e.preventDefault();
-
-        const correo   = document.getElementById('correo').value.trim();
-        const password = inputPass.value.trim();
-
-        // Validación mínima en cliente
-        if (!correo || !password) {
-            Swal.fire({
-                icon:             'warning',
-                title:            'Campos requeridos',
-                text:             'Ingresa tu correo y contraseña para continuar.',
-                confirmButtonColor: '#007AFF',
-                confirmButtonText: 'Entendido',
-            });
-            return;
-        }
-
-        // Estado de carga
-        setBtnLoading(true);
-
-        // Alerta de validación en progreso
-        Swal.fire({
-            title:             'Validando…',
-            text:              'Verificando tus credenciales institucionales.',
-            allowOutsideClick: false,
-            allowEscapeKey:    false,
-            didOpen: () => Swal.showLoading(),
+        // Toggle visibilidad de contraseña
+        btnTogglePass.addEventListener('click', function () {
+            const isPassword = inputPassword.type === 'password';
+            inputPassword.type = isPassword ? 'text' : 'password';
+            eyeOpenIcon.style.display = isPassword ? 'none' : 'block';
+            eyeClosedIcon.style.display = isPassword ? 'block' : 'none';
+            inputPassword.focus();
         });
 
-        try {
-            const formData = new FormData();
-            formData.append('correo',   correo);
-            formData.append('password', password);
-
-            const response = await fetch(BASE_URL + '/login', {
-                method:      'POST',
-                body:        formData,
-                credentials: 'same-origin',
-                headers:     { 'X-Requested-With': 'XMLHttpRequest' },
-            });
-
-            let data;
-            try {
-                data = await response.json();
-            } catch {
-                throw new Error('La respuesta del servidor no es válida (no es JSON).');
-            }
-
-            if (data.exito) {
-                // ── Éxito: redirigir al dashboard ────────────────────────
-                await Swal.fire({
-                    icon:             'success',
-                    title:            '¡Bienvenido!',
-                    text:             `Acceso concedido. Redirigiendo al panel...`,
-                    confirmButtonColor: '#007AFF',
-                    timer:            1800,
-                    timerProgressBar: true,
-                    showConfirmButton: false,
-                });
-                window.location.href = data.redirigir || (BASE_URL + '/dashboard');
-
-            } else {
-                // ── Fallo: mostrar mensaje del servidor ───────────────────
-                Swal.fire({
-                    icon:             'error',
-                    title:            'Acceso denegado',
-                    text:             data.mensaje || 'Credenciales incorrectas.',
-                    confirmButtonColor: '#007AFF',
-                    confirmButtonText: 'Reintentar',
-                    customClass:      { popup: 'swal-ispeb' },
-                });
-                setBtnLoading(false);
-            }
-
-        } catch (error) {
-            console.error('[ISPEB Login Error]', error);
-            Swal.fire({
-                icon:             'error',
-                title:            'Error de conexión',
-                text:             'No se pudo conectar con el servidor. Inténtalo nuevamente.',
-                confirmButtonColor: '#007AFF',
-                confirmButtonText:  'Cerrar',
-            });
-            setBtnLoading(false);
+        // Animación Shake estilo macOS al detectar error
+        function triggerShake() {
+            loginCard.classList.remove('shake-animation');
+            // Forzar reflow para reiniciar la animación
+            void loginCard.offsetWidth;
+            loginCard.classList.add('shake-animation');
         }
-    });
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
+        // Estado de carga del botón
+        function setLoading(isLoading) {
+            btnSubmit.disabled = isLoading;
+            btnSubmit.classList.toggle('loading', isLoading);
+        }
 
-    /**
-     * Controla el estado visual de carga del botón de submit.
-     * @param {boolean} loading
-     */
-    function setBtnLoading(loading) {
-        btnIngresar.disabled = loading;
-        btnIngresar.classList.toggle('loading', loading);
-    }
+        // Interceptación de envío con Fetch API
+        formLogin.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-}());
-</script>
+            const correo = inputCorreo.value.trim();
+            const password = inputPassword.value.trim();
 
+            if (!correo || !password) {
+                triggerShake();
+                Swal.fire({
+                    title: 'Campos requeridos',
+                    text: 'Por favor ingresa tu correo institucional y contraseña.',
+                    icon: 'warning',
+                    confirmButtonText: 'Continuar',
+                    customClass: {
+                        popup: 'apple-modal',
+                        confirmButton: 'apple-btn'
+                    },
+                    buttonsStyling: false
+                });
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const formData = new FormData();
+                formData.append('correo', correo);
+                formData.append('password', password);
+
+                const response = await fetch(formLogin.action, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                let data;
+                try {
+                    data = await response.json();
+                } catch (parseError) {
+                    throw new Error('Respuesta inválida del servidor.');
+                }
+
+                if (data.exito) {
+                    // Acceso exitoso
+                    Swal.fire({
+                        title: 'Acceso Concedido',
+                        text: 'Iniciando sesión...',
+                        icon: 'success',
+                        showConfirmButton: false,
+                        timer: 1200,
+                        timerProgressBar: true,
+                        customClass: {
+                            popup: 'apple-modal'
+                        }
+                    }).then(() => {
+                        window.location.href = data.redirigir || (BASE_URL + '/dashboard');
+                    });
+                } else {
+                    // Acceso denegado
+                    triggerShake();
+                    Swal.fire({
+                        title: 'Credenciales Incorrectas',
+                        text: data.mensaje || 'El correo o la contraseña no coinciden.',
+                        icon: 'error',
+                        confirmButtonText: 'Intentar de nuevo',
+                        customClass: {
+                            popup: 'apple-modal',
+                            confirmButton: 'apple-btn'
+                        },
+                        buttonsStyling: false
+                    });
+                    setLoading(false);
+                    inputPassword.value = '';
+                    inputPassword.focus();
+                }
+
+            } catch (err) {
+                console.error('[ISPEB Auth Error]', err);
+                triggerShake();
+                Swal.fire({
+                    title: 'Error de Conexión',
+                    text: 'No fue posible comunicar con el servidor institucional.',
+                    icon: 'error',
+                    confirmButtonText: 'Entendido',
+                    customClass: {
+                        popup: 'apple-modal',
+                        confirmButton: 'apple-btn'
+                    },
+                    buttonsStyling: false
+                });
+                setLoading(false);
+            }
+        });
+    })();
+    </script>
 </body>
 </html>
