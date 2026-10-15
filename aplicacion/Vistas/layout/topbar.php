@@ -37,8 +37,13 @@ $rolUsuario    = htmlspecialchars((string) ($_SESSION['rol'] ?? 'Administrador')
 $badgeIniciales = strtoupper(substr($nombreUsuario, 0, 2)) ?: 'AD';
 ?>
 <header class="topbar" role="banner">
-    <!-- Lado Izquierdo: Botón de retroceso inteligente con bandera anti-bucles -->
+    <!-- Lado Izquierdo: Botón Hamburguesa Off-canvas y Botón de retroceso -->
     <div class="topbar-left">
+        <!-- Botón de apertura de menú en pantallas móviles/tablets -->
+        <button type="button" class="btn-toggle-sidebar" id="btnToggleSidebar" aria-label="Abrir menú de navegación" title="Menú">
+            <i class="fa-solid fa-bars" aria-hidden="true"></i>
+        </button>
+
         <?php if (!$esDashboard): ?>
             <a href="<?= htmlspecialchars($urlDestino, ENT_QUOTES, 'UTF-8') ?>" class="topbar-btn-atras" title="Regresar" aria-label="Atrás">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>

@@ -19,15 +19,9 @@ $esAdmin = in_array(strtolower((string)($_SESSION['rol'] ?? '')), ['admin', 'adm
 ?>
 <aside class="sidebar" role="navigation" aria-label="Menú Principal">
     
-    <!-- Logotipo Institucional ISPEB -->
-    <a href="<?= BASE_URL ?>/dashboard" class="sidebar-brand">
-        <div class="brand-icon-sq" aria-hidden="true">
-            <i class="fa-solid fa-shield-halved"></i>
-        </div>
-        <div class="brand-text">
-            <span class="brand-name">ISPEB</span>
-            <span class="brand-desc">Certificaciones QR</span>
-        </div>
+    <!-- Logotipo Institucional Kredentia -->
+    <a href="<?= BASE_URL ?>/dashboard" class="sidebar-brand" aria-label="Kredentia">
+        <img src="<?= (defined('BASE_URL') && BASE_URL !== '') ? BASE_URL . '/' : '' ?>assets/img/sidebar-logo.png" alt="Kredentia" class="sidebar-brand-img">
     </a>
 
     <!-- Menú Vertical de Navegación -->
@@ -38,7 +32,7 @@ $esAdmin = in_array(strtolower((string)($_SESSION['rol'] ?? '')), ['admin', 'adm
         <a href="<?= BASE_URL ?>/dashboard" 
            class="nav-item <?= in_array($rutaLimpia, ['dashboard', ''], true) ? 'active' : '' ?>">
             <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
-            <span>Dashboard</span>
+            <span>Inicio</span>
         </a>
 
         <span class="nav-section-title">Gestión</span>
@@ -77,9 +71,9 @@ $esAdmin = in_array(strtolower((string)($_SESSION['rol'] ?? '')), ['admin', 'adm
         <?php endif; ?>
     </nav>
 
-    <!-- Estado Inferior Flotante Neo-Corporate -->
-    <div class="sidebar-bottom-status" title="Sistema en línea y seguro">
-        <span class="status-dot-green" aria-hidden="true"></span>
-        <span class="status-text-shell">En línea v2.4.0 • Vision Shell</span>
+    <!-- Indicador de Conexión en Tiempo Real -->
+    <div id="network-status" class="network-status online" title="Estado de la red">
+        <span class="status-dot"></span>
+        <span class="status-text">En línea</span>
     </div>
 </aside>

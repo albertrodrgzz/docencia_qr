@@ -70,6 +70,90 @@ $baseUrl = defined('BASE_URL')
                 }
             });
         }
+
+        /**
+         * Control interactivo del Sidebar Off-Canvas en móvil/tablet
+         */
+        document.addEventListener('DOMContentLoaded', function () {
+            const btnToggle = document.getElementById('btnToggleSidebar');
+            const sidebar   = document.querySelector('.sidebar');
+            const overlay   = document.getElementById('sidebarOverlay');
+
+            if (btnToggle && sidebar && overlay) {
+                btnToggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('open');
+                    overlay.classList.toggle('active');
+                    document.body.classList.toggle('sidebar-open');
+                });
+
+                overlay.addEventListener('click', function () {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('active');
+                    document.body.classList.remove('sidebar-open');
+                });
+
+                sidebar.querySelectorAll('a').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        if (window.innerWidth <= 1024) {
+                            sidebar.classList.remove('open');
+                            overlay.classList.remove('active');
+                            document.body.classList.remove('sidebar-open');
+                        }
+                    });
+                });
+            }
+        });
+
+        /**
+         * Indicador de Conexión a Internet en Tiempo Real (Navigator API)
+         */
+        (function () {
+            function updateNetworkStatus() {
+                const statusContainer = document.getElementById('network-status');
+                if (!statusContainer) return;
+
+                const textSpan = statusContainer.querySelector('.status-text');
+                const isOnline = navigator.onLine;
+
+                if (isOnline) {
+                    statusContainer.classList.remove('offline');
+                    statusContainer.classList.add('online');
+                    if (textSpan) textSpan.textContent = 'En línea';
+                    statusContainer.setAttribute('title', 'Conectado a Internet');
+                } else {
+                    statusContainer.classList.remove('online');
+                    statusContainer.classList.add('offline');
+                    if (textSpan) textSpan.textContent = 'Sin conexión';
+                    statusContainer.setAttribute('title', 'Sin conexión a Internet');
+
+                    // Notificación Toast sutil
+                    if (typeof Toast !== 'undefined') {
+                        Toast.fire({
+                            icon: 'error',
+                            title: 'Conexión a internet perdida'
+                        });
+                    }
+                }
+            }
+
+            // Verificar al cargar la página
+            window.addEventListener('load', updateNetworkStatus);
+            document.addEventListener('DOMContentLoaded', updateNetworkStatus);
+
+            // Escuchar eventos online y offline del navegador
+            window.addEventListener('online', function () {
+                updateNetworkStatus();
+                if (typeof Toast !== 'undefined') {
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Conexión restablecida'
+                    });
+                }
+            });
+
+            window.addEventListener('offline', updateNetworkStatus);
+        })();
     </script>
 
     <!-- ── Espacio para Scripts Específicos de la Vista ── -->

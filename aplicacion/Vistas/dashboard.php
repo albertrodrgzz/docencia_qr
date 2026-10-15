@@ -128,8 +128,8 @@ require_once __DIR__ . '/layout/header.php';
     /* ── 2. Bento Grid y Tarjetas de Métricas (Widgets) ── */
     .bento-grid {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 22px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
         margin-bottom: 30px;
     }
 
@@ -727,7 +727,6 @@ require_once __DIR__ . '/layout/header.php';
         </div>
         <div class="bento-card-values">
             <span class="bento-main-number"><?= number_format($totalFuncionarios) ?></span>
-            <span class="bento-trend-green"><i class="fa-solid fa-arrow-trend-up"></i> ↑ 100%</span>
         </div>
         <div class="bento-card-label">Total Funcionarios</div>
         <!-- Marca de agua translúcida al fondo derecho: Índigo -->
@@ -744,7 +743,6 @@ require_once __DIR__ . '/layout/header.php';
         </div>
         <div class="bento-card-values">
             <span class="bento-main-number"><?= number_format($registradosHoy) ?></span>
-            <span class="bento-trend-green"><i class="fa-solid fa-arrow-trend-up"></i> ↑ 100%</span>
         </div>
         <div class="bento-card-label">Registrados Hoy</div>
         <!-- Marca de agua translúcida al fondo derecho: Verde Esmeralda -->
@@ -761,7 +759,6 @@ require_once __DIR__ . '/layout/header.php';
         </div>
         <div class="bento-card-values">
             <span class="bento-main-number"><?= number_format($totalFuncionarios) ?></span>
-            <span class="bento-trend-green"><i class="fa-solid fa-arrow-trend-up"></i> ↑ 100%</span>
         </div>
         <div class="bento-card-label">Certificados QR Activos</div>
         <!-- Marca de agua translúcida al fondo derecho: Púrpura -->

@@ -19,8 +19,12 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5f5f7">
-    <meta name="description" content="Sistema Institucional de Certificaciones y Validación QR — ISPEB">
-    <title><?= $tituloPagina ?> — ISPEB</title>
+    <meta name="description" content="Sistema Institucional de Certificaciones y Validación QR — Kredentia">
+    <title>Kredentia | Autenticación Institucional</title>
+
+    <!-- Favicon Kredentia -->
+    <link rel="icon" type="image/png" href="<?= (defined('BASE_URL') && BASE_URL !== '') ? BASE_URL . '/' : '' ?>assets/img/favicon.png">
+    <link rel="icon" type="image/png" href="assets/img/favicon.png">
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,16 +86,13 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background-color: #fbfbfe;
+            background-color: #f8fafc;
             background-image: 
-                radial-gradient(at 0% 0%, rgba(224, 231, 255, 0.45) 0px, transparent 45%),
-                radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.40) 0px, transparent 40%),
-                radial-gradient(at 85% 85%, rgba(224, 242, 254, 0.45) 0px, transparent 45%),
-                radial-gradient(at 0% 100%, rgba(238, 242, 255, 0.50) 0px, transparent 45%),
-                radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.75) 0px, transparent 100%);
+                radial-gradient(rgba(79, 70, 229, 0.08) 2px, transparent 2px), 
+                radial-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px, 16px 16px;
+            background-position: 0 0, 8px 8px;
             background-attachment: fixed;
-            background-repeat: no-repeat;
-            background-size: cover;
             font-family: var(--font-family);
             color: var(--text-heading);
             letter-spacing: -0.015em;
@@ -115,57 +116,53 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             bottom: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: rgba(255, 255, 255, 0.78);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
             border-right: 1px solid rgba(15, 23, 42, 0.06);
             padding: 24px 16px 20px 16px;
             display: flex;
             flex-direction: column;
-            z-index: 90;
+            z-index: 100;
             box-sizing: border-box;
+            box-shadow: 2px 0 24px rgba(15, 23, 42, 0.02);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
         }
 
         .sidebar-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 6px 10px 20px 10px;
+            justify-content: center;
+            padding: 10px 14px 20px 14px;
             text-decoration: none;
             color: var(--text-heading);
             border-bottom: 1px solid var(--border-subtle);
             margin-bottom: 16px;
+            animation: none !important;
+            transform: none !important;
+            transition: opacity 0.2s ease;
         }
 
-        .brand-icon-sq {
-            width: 38px;
-            height: 38px;
-            background: linear-gradient(135deg, var(--primary-indigo) 0%, #2e2687 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 14px rgba(55, 48, 163, 0.28);
+        .sidebar-brand:hover {
+            opacity: 0.88;
+            transform: none !important;
+            background: transparent !important;
         }
 
-        .brand-text {
-            display: flex;
-            flex-direction: column;
+        .sidebar-brand-img {
+            max-width: 170px;
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-drag: none;
+            transition: transform 0.2s ease;
         }
 
-        .brand-name {
-            font-weight: 700;
-            font-size: 1.12rem;
-            letter-spacing: -0.02em;
-            line-height: 1.15;
-        }
-
-        .brand-desc {
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            font-weight: 500;
+        .sidebar-brand-img:hover {
+            transform: scale(1.02);
         }
 
         .sidebar-nav {
@@ -250,34 +247,47 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             color: #ffffff !important;
         }
 
-        /* ── Contenedor Flotante de Estado Inferior del Sidebar ── */
-        .sidebar-bottom-status {
+        /* ── Indicador de Red en Tiempo Real (.network-status) ── */
+        .network-status {
             margin-top: auto;
             background: #f8fafc;
             border: 1px solid rgba(15, 23, 42, 0.06);
-            border-radius: 14px;
-            padding: 10px 14px;
+            border-radius: 12px;
+            padding: 9px 12px;
             display: flex;
             align-items: center;
             gap: 10px;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
-            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+            transition: all 0.25s ease;
+            user-select: none;
         }
 
-        .sidebar-bottom-status:hover {
+        .network-status:hover {
             background: #ffffff;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
-            border-color: rgba(55, 48, 163, 0.16);
+            border-color: rgba(15, 23, 42, 0.12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
         }
 
-        .status-dot-green {
+        .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #10b981;
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
             flex-shrink: 0;
-            animation: pulseStatusGreen 2s infinite ease-in-out;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Estado Online: Punto Verde con resplandor suave */
+        .network-status.online .status-dot {
+            background-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            animation: pulseOnline 2.5s infinite ease-in-out;
+        }
+
+        /* Estado Offline: Punto Rojo con resplandor de advertencia */
+        .network-status.offline .status-dot {
+            background-color: #ef4444;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+            animation: pulseOffline 1.5s infinite ease-in-out;
         }
 
         @keyframes pulseStatusGreen {
@@ -291,19 +301,33 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             }
         }
 
-        .status-text-shell {
-            font-size: 0.73rem;
-            font-weight: 600;
-            color: #475569;
+        .status-text {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 500;
             letter-spacing: -0.01em;
-            line-height: 1.25;
-            white-space: nowrap;
+            line-height: 1.2;
+            transition: color 0.25s ease;
+        }
+
+        .network-status.offline .status-text {
+            color: #ef4444;
+            font-weight: 600;
         }
 
         /* ── 2. Contenedor Principal (.main-wrapper) ── */
         .main-wrapper {
-            margin-left: 260px;
+            margin-left: var(--sidebar-width, 260px);
             min-height: 100vh;
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(rgba(79, 70, 229, 0.08) 2px, transparent 2px), 
+                radial-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px, 16px 16px;
+            background-position: 0 0, 8px 8px;
+            background-attachment: fixed;
+            transition: margin-left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
 
         /* ── 3. Topbar (.topbar sticky con blur y ancho 100%) ── */
@@ -1022,67 +1046,177 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         }
 
         /* ═════════════════════════════════════════════════════════════════ */
-        /* RESPONSIVIDAD GLOBAL Y TABLAS (MEDIA QUERIES)                    */
+        /* RESPONSIVIDAD GLOBAL, HAMBURGUESA Y TABLAS (MEDIA QUERIES)       */
         /* ═════════════════════════════════════════════════════════════════ */
 
-        /* 1. Contenedor de tablas responsivo (Evita que la pantalla se ensanche) */
+        /* Botón Hamburguesa Off-canvas (Oculto en Desktop) */
+        .btn-toggle-sidebar {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.04);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            color: var(--text-heading);
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            margin-right: 4px;
+        }
+
+        .btn-toggle-sidebar:hover {
+            background: rgba(55, 48, 163, 0.08);
+            color: var(--primary-indigo);
+            border-color: rgba(55, 48, 163, 0.2);
+        }
+
+        /* Overlay semitransparente para cerrar el menú en móvil/tablet */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 95;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .sidebar-overlay.active {
+            display: block;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* 1. Contenedor de tablas responsivo (Scroll horizontal suave) */
         .table-responsive {
             width: 100%;
-            max-width: 100%; /* Evita que crezca más que su padre */
+            max-width: 100%;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
-            border-radius: 24px;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 20px;
+            margin-bottom: 12px;
         }
 
-        /* Asegurarse de que la tabla en sí mantenga un ancho mínimo legible */
         .table-responsive table {
-            min-width: 900px; /* Fuerza a la tabla a mantener su diseño original */
+            min-width: 720px;
             width: 100%;
         }
 
-        /* 2. Reglas Globales Responsive (Media Queries) */
-        /* Cambiamos el breakpoint de 1024px a 1200px para pantallas medianas con Sidebar */
-        @media (max-width: 1200px) {
-            /* El grid de Reportes pasa a 1 sola columna */
-            .reportes-layout {
-                grid-template-columns: 1fr !important;
+        /* 2. Media Query para Tablets y Laptops Pequeñas (<= 1024px) */
+        @media (max-width: 1024px) {
+            .btn-toggle-sidebar {
+                display: inline-flex;
             }
-            /* El panel de filtros dejará de ser una columna lateral y se apilará arriba */
-            .filter-card {
-                margin-bottom: 20px;
+
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 100;
+                box-shadow: 0 0 50px rgba(15, 23, 42, 0.2);
             }
-            /* Las tarjetas Bento del Dashboard pasan a 2 o 1 columna */
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-wrapper {
+                margin-left: 0 !important;
+            }
+
+            .topbar {
+                padding: 12px 20px !important;
+            }
+
             .bento-grid {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)) !important;
+                gap: 16px !important;
             }
-            /* Ajustar paddings de la tarjeta principal y envolturas */
-            .content-card {
-                padding: 20px !important;
-            }
+
             .content-wrapper {
                 padding: 20px !important;
             }
         }
 
+        /* 3. Media Query para Smartphones (<= 768px) */
         @media (max-width: 768px) {
-            /* Ocultar elementos no esenciales en móvil */
             .hide-on-mobile {
                 display: none !important;
             }
-            /* Títulos más pequeños */
-            .page-title {
+
+            .page-title, .dashboard-main-title {
                 font-size: 1.5rem !important;
             }
+
             .content-wrapper {
-                padding: 14px !important;
+                padding: 16px 12px !important;
             }
+
             .topbar {
-                padding: 12px 16px !important;
+                padding: 10px 14px !important;
+            }
+
+            .user-pill-text {
+                display: none !important;
+            }
+
+            .btn-topbar-logout span {
+                display: none !important;
+            }
+
+            .btn-topbar-logout {
+                padding: 8px 10px !important;
+            }
+
+            .dashboard-neo-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 14px !important;
+            }
+
+            .dashboard-neo-actions {
+                width: 100%;
+                display: flex;
+                flex-direction: row;
+                gap: 10px;
+            }
+
+            .dashboard-neo-actions button,
+            .dashboard-neo-actions a {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .bento-grid {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+            }
+
+            .table-neo-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px !important;
+            }
+
+            .table-neo-controls {
+                width: 100% !important;
+                justify-content: space-between !important;
+            }
+
+            .table-search-bar {
+                flex-grow: 1 !important;
             }
         }
     </style>
 </head>
 <body>
+
+    <!-- Overlay oscuro para menú Off-canvas en móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
 
     <!-- Ensamblador: 1. Sidebar Independiente -->
     <?php require_once __DIR__ . '/sidebar.php'; ?>
