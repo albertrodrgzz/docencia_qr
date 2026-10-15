@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controladores;
 
 use App\Modelos\FuncionarioModelo;
+use App\Servicios\QrServicio;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Throwable;
@@ -50,10 +51,19 @@ class FuncionarioControlador
     {
         $this->requiereAuth();
 
-        $directorioQrs = dirname(__DIR__, 2) . '/almacenamiento/qrs/';
+        $directorioQrs = QrServicio::obtenerDirectorio() . '/';
 
-        if (!is_dir($directorioQrs)) {
-            mkdir($directorioQrs, 0755, true);
+        // Garantizar que todos los funcionarios activos tengan su archivo QR físico en disco (resiliencia nube/Render)
+        try {
+            $funcionarios = $this->modelo->obtenerTodos();
+            foreach ($funcionarios as $func) {
+                $ced = (string) ($func['cedula'] ?? '');
+                if ($ced !== '') {
+                    QrServicio::asegurarQrPng($ced);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('[FuncionarioControlador::descargarQrsZip] Advertencia al precargar QRs: ' . $e->getMessage());
         }
 
         // Crear archivo temporal seguro en el directorio del servidor
@@ -294,23 +304,8 @@ class FuncionarioControlador
                 return;
             }
 
-            // Construcción de la ruta física del archivo QR
-            $rutaQr     = dirname(__DIR__, 2) . '/almacenamiento/qrs/qr_' . $cedula . '.png';
-            $cedulaSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $cedula);
-            $rutaQrSafe = dirname(__DIR__, 2) . '/almacenamiento/qrs/qr_' . $cedulaSafe . '.png';
-
-            $qrBase64 = null;
-            if (file_exists($rutaQr) && is_readable($rutaQr)) {
-                $contenidoArchivo = file_get_contents($rutaQr);
-                if ($contenidoArchivo !== false) {
-                    $qrBase64 = 'data:image/png;base64,' . base64_encode($contenidoArchivo);
-                }
-            } elseif (file_exists($rutaQrSafe) && is_readable($rutaQrSafe)) {
-                $contenidoArchivo = file_get_contents($rutaQrSafe);
-                if ($contenidoArchivo !== false) {
-                    $qrBase64 = 'data:image/png;base64,' . base64_encode($contenidoArchivo);
-                }
-            }
+            // Obtener el código QR en Base64 (regeneración automática bajo demanda si el servidor se reinició)
+            $qrBase64 = QrServicio::obtenerQrBase64($cedula);
 
             http_response_code(200);
             echo json_encode([

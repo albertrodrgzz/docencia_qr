@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controladores;
 
 use App\Modelos\FuncionarioModelo;
+use App\Servicios\QrServicio;
 use FPDF;
 use Throwable;
 
@@ -168,19 +169,18 @@ class ReporteControlador
                 $pdf->SetLineWidth(0.25);
                 $pdf->Rect($x, $y, $cardAncho, $cardAlto, 'D');
 
-                // ── B. Leer archivo físico de QR e insertar con $pdf->Image() ─
+                // ── B. Asegurar archivo físico de QR e insertar con $pdf->Image() ─
                 $cedula = (string) ($func['cedula'] ?? '');
-                $cedulaSegura = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $cedula);
-                $rutaArchivoQr = $directorioQrs . '/qr_' . $cedulaSegura . '.png';
+                $rutaArchivoQr = QrServicio::asegurarQrPng($cedula);
 
                 // Centrar horizontalmente el QR de 30mm en la tarjeta de 58mm
                 $qrX = $x + (($cardAncho - $qrSize) / 2);
                 $qrY = $y + 3;
 
-                if (file_exists($rutaArchivoQr)) {
+                if (file_exists($rutaArchivoQr) && is_readable($rutaArchivoQr)) {
                     $pdf->Image($rutaArchivoQr, $qrX, $qrY, $qrSize, $qrSize);
                 } else {
-                    // Fallback visual si el QR no estuviese físicamente generado
+                    // Fallback visual de seguridad
                     $pdf->SetDrawColor(230, 230, 235);
                     $pdf->Rect($qrX, $qrY, $qrSize, $qrSize, 'D');
                     $pdf->SetFont('Arial', 'I', 7);

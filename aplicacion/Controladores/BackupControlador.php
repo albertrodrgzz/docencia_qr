@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controladores;
 
+use App\Servicios\QrServicio;
 use Configuracion\ConexionBD;
 use PDO;
 use Throwable;
@@ -311,11 +312,10 @@ SQL;
             $pdf->SetLineWidth(0.3);
             $pdf->Rect($x, $y, $cardW, $cardH, 'D');
 
-            // Cargar imagen QR si existe
-            $cedulaSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', (string) $func['cedula']);
-            $qrPath = STORAGE_DIR . '/qrs/qr_' . $cedulaSafe . '.png';
+            // Cargar imagen QR (con regeneración automática bajo demanda)
+            $qrPath = QrServicio::asegurarQrPng((string) $func['cedula']);
 
-            if (file_exists($qrPath)) {
+            if (file_exists($qrPath) && is_readable($qrPath)) {
                 $pdf->Image($qrPath, $x + ($cardW - 30) / 2, $y + 3, 30, 30);
             } else {
                 $pdf->SetFont('Arial', 'I', 7);

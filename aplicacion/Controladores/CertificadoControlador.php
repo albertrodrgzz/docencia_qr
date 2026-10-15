@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controladores;
 
 use App\Modelos\FuncionarioModelo;
+use App\Servicios\QrServicio;
 use FPDF;
 use Throwable;
 
@@ -189,13 +190,7 @@ class CertificadoControlador
             $pdf->Cell($anchoLinea, 7, $this->fpdfTexto($departamento), 0, 1, 'L');
 
             // ── E. Estampado del Código QR Físico Oficial ────────────────────
-            $directorioQrs = defined('STORAGE_DIR')
-                ? STORAGE_DIR . '/qrs'
-                : dirname(__DIR__, 2) . '/almacenamiento/qrs';
-
-            $cedulaSafe = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $cedulaFunc);
-            $rutaQrPng  = $directorioQrs . '/qr_' . $cedulaSafe . '.png';
-
+            $rutaQrPng = QrServicio::asegurarQrPng($cedulaFunc);
             $qrSize = 42;
             $qrX = (210 - $qrSize) / 2; // Centrado en la página A4 (210mm)
             $qrY = 195;
@@ -209,7 +204,7 @@ class CertificadoControlador
                 // Imagen QR
                 $pdf->Image($rutaQrPng, $qrX, $qrY, $qrSize, $qrSize);
             } else {
-                // Fallback visual si el PNG físico no existe
+                // Fallback visual de seguridad
                 $pdf->SetDrawColor(226, 232, 240);
                 $pdf->Rect($qrX, $qrY, $qrSize, $qrSize, 'D');
                 $pdf->SetFont('Arial', 'I', 8);
