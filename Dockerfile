@@ -19,8 +19,17 @@ RUN a2enmod rewrite headers expires deflate
 RUN printf '<Directory /var/www/html>\n\tOptions -Indexes +FollowSymLinks\n\tAllowOverride All\n\tRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/kredentia.conf \
     && a2enconf kredentia
 
+# Instalar Composer desde la imagen oficial
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
 # Copiar el código fuente de la aplicación
 COPY . /var/www/html/
+
+# Configurar directorio de trabajo
+WORKDIR /var/www/html
+
+# Instalar dependencias de producción automáticamente
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
 # Asegurar directorios de almacenamiento y permisos de usuario web
 RUN mkdir -p /var/www/html/almacenamiento/logs \
