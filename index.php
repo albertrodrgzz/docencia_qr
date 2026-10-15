@@ -126,6 +126,21 @@ if ($esProduccion) {
     ini_set('display_startup_errors', '1');
 }
 
+// ── 3.1 Endpoint ultraligero Keep-Alive / Heartbeat (/ping) ──────────────────
+// Responde inmediatamente a servicios externos (ej. cron-job.org) para prevenir
+// que Render suspenda la app por inactividad, sin generar archivos de sesión.
+$uriPing = $_SERVER['REQUEST_URI'] ?? '/';
+$pathPing = parse_url($uriPing, PHP_URL_PATH) ?: '/';
+if (defined('BASE_URL') && BASE_URL !== '' && str_starts_with($pathPing, BASE_URL)) {
+    $pathPing = substr($pathPing, strlen(BASE_URL));
+}
+$pathPing = rtrim($pathPing, '/') ?: '/';
+
+if ($pathPing === '/ping' || $pathPing === '/ping.php') {
+    require_once __DIR__ . '/ping.php';
+    exit();
+}
+
 // ── 4. Inicio de sesión seguro ───────────────────────────────────────────────
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.use_strict_mode', '1');
