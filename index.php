@@ -208,6 +208,7 @@ $rutas = [
     'POST:/usuarios/crear'   => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'GET:/validar'           => ['App\\Controladores\\ValidacionControlador',   'validar'],
     'GET:/certificado'       => ['App\\Controladores\\CertificadoControlador',  'generar'],
+    'GET:/instalar-bd'       => ['App\\Controladores\\InstaladorControlador',   'migrar'],
     'GET:/404'               => ['App\\Controladores\\ErrorControlador',        'notFound'],
 ];
 
