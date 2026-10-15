@@ -1,4 +1,6 @@
 <?php
+$page_title = 'Reportes';
+
 /**
  * Vista de Reportes y Exportación Reactiva en Tiempo Real — ISPEB Sistema Institucional
  * Ecosistema macOS / Apple HIG con Live Search, Debounce y Vista Previa sin recargas.

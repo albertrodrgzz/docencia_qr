@@ -1,4 +1,6 @@
 <?php
+$page_title = 'Perfil';
+
 /**
  * Vista: Mi Perfil — ISPEB Sistema Institucional
  * Ecosistema Neo-Corporate con Contenedor Centralizado (700px)

@@ -1,4 +1,6 @@
 <?php
+$page_title = 'Usuarios';
+
 /**
  * Vista de Gestión de Usuarios — ISPEB Sistema Institucional de Certificaciones
  * Estandarizada con plantillas maestras (Layout Header + Footer)
@@ -11,7 +13,51 @@ $mostrarBotonAtras = true;
 
 require_once __DIR__ . '/layout/header.php';
 
-$listaUsuarios = (array) ($usuarios ?? []);
+// ── Paginación del Servidor (Server-Side Pagination) ──────────────────────
+$limite = 10; // Registros por página
+
+// Capturar página actual de forma segura (entero >= 1)
+$pagina = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+if ($pagina < 1) {
+    $pagina = 1;
+}
+
+$inicio = ($pagina - 1) * $limite;
+
+try {
+    $pdo = \Configuracion\ConexionBD::getInstancia();
+
+    // Consulta SQL 1: Obtener el total de registros
+    $stmtCount = $pdo->query("SELECT COUNT(*) FROM usuarios_sistema");
+    $total_registros = (int) $stmtCount->fetchColumn();
+
+    // Calcular el total de páginas
+    $total_paginas = max(1, (int) ceil($total_registros / $limite));
+
+    // Si la página excede el total, reajustar a la última
+    if ($pagina > $total_paginas) {
+        $pagina = $total_paginas;
+        $inicio = ($pagina - 1) * $limite;
+    }
+
+    // Consulta SQL 2: Obtener registros del lote actual con LIMIT y OFFSET
+    $stmt = $pdo->prepare("SELECT id_usuario, nombre, correo, rol, estado, fecha_registro 
+                           FROM usuarios_sistema 
+                           ORDER BY id_usuario DESC 
+                           LIMIT :inicio, :limite");
+    $stmt->bindValue(':inicio', (int) $inicio, PDO::PARAM_INT);
+    $stmt->bindValue(':limite', (int) $limite, PDO::PARAM_INT);
+    $stmt->execute();
+    $listaUsuarios = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+} catch (\Throwable $e) {
+    $total_registros = count($usuarios ?? []);
+    $total_paginas   = max(1, (int) ceil($total_registros / $limite));
+    $listaUsuarios   = array_slice((array)($usuarios ?? []), $inicio, $limite);
+}
+
+// Variables para el texto dinámico
+$mostrando_desde = ($total_registros > 0) ? ($inicio + 1) : 0;
+$mostrando_hasta = min($inicio + $limite, $total_registros);
 
 if (!function_exists('obtenerIniciales')) {
     function obtenerIniciales(string $nombre): string {
@@ -215,8 +261,8 @@ if (!function_exists('obtenerColorAvatar')) {
     .table-responsive {
         width: 100%;
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
         border-radius: 16px;
-        overflow: hidden;
         border: 1px solid rgba(0, 0, 0, 0.04);
         background: #ffffff;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
@@ -225,6 +271,7 @@ if (!function_exists('obtenerColorAvatar')) {
     .table-minimal-ios,
     .users-table {
         width: 100%;
+        min-width: 800px;
         border-collapse: collapse;
         text-align: left;
     }
@@ -262,6 +309,7 @@ if (!function_exists('obtenerColorAvatar')) {
         border-top: none;
         border-bottom: 1px solid rgba(0, 0, 0, 0.03);
         vertical-align: middle;
+        white-space: nowrap;
     }
 
     .table-minimal-ios tbody tr:last-child td,
@@ -421,13 +469,27 @@ if (!function_exists('obtenerColorAvatar')) {
         border-radius: 50%;
         border: 1px solid rgba(0, 0, 0, 0.06);
         background: #ffffff;
-        color: #94a3b8;
+        color: #475569;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        cursor: not-allowed;
+        cursor: pointer;
         font-size: 0.75rem;
         transition: all 0.2s ease;
+        text-decoration: none;
+    }
+
+    .btn-pagination-nav:hover:not(:disabled):not(.disabled) {
+        background: #f1f5f9;
+        color: #3730a3;
+        border-color: rgba(55, 48, 163, 0.2);
+    }
+
+    .btn-pagination-nav:disabled,
+    .btn-pagination-nav.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
     }
 
     .page-number-active {
@@ -752,19 +814,33 @@ if (!function_exists('obtenerColorAvatar')) {
             </table>
         </div> <!-- /.table-container-responsive -->
 
-        <!-- ── Paginación Inferior ── -->
+        <!-- ── Paginación Inferior Dinámica ── -->
         <div class="table-pagination-footer">
             <div class="pagination-info-text">
-                Mostrando 1 a <?= count($listaUsuarios) ?> de <?= count($listaUsuarios) ?> usuarios registrados • Total 1 Página
+                Mostrando <?= $mostrando_desde ?> a <?= $mostrando_hasta ?> de <?= $total_registros ?> usuarios registrados • Total <?= $total_paginas ?> Página(s)
             </div>
             <div class="pagination-controls-group">
-                <button type="button" class="btn-pagination-nav" disabled title="Página anterior" aria-label="Anterior">
-                    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
-                </button>
-                <span class="page-number-active" aria-current="page">1</span>
-                <button type="button" class="btn-pagination-nav" disabled title="Página siguiente" aria-label="Siguiente">
-                    <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                </button>
+                <?php if ($pagina > 1): ?>
+                    <a href="?pagina=<?= $pagina - 1 ?>" class="btn-pagination-nav" title="Página anterior" aria-label="Anterior">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </a>
+                <?php else: ?>
+                    <button type="button" class="btn-pagination-nav" disabled title="Página anterior" aria-label="Anterior">
+                        <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                <?php endif; ?>
+
+                <span class="page-number-active" aria-current="page"><?= $pagina ?></span>
+
+                <?php if ($pagina < $total_paginas): ?>
+                    <a href="?pagina=<?= $pagina + 1 ?>" class="btn-pagination-nav" title="Página siguiente" aria-label="Siguiente">
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </a>
+                <?php else: ?>
+                    <button type="button" class="btn-pagination-nav" disabled title="Página siguiente" aria-label="Siguiente">
+                        <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
 

@@ -1,4 +1,6 @@
 <?php
+$page_title = 'Respaldos';
+
 /**
  * Vista de Respaldos y Restauración de Base de Datos — ISPEB Sistema Institucional
  * Ecosistema Neo-Corporate con Layout Horizontal de Dos Columnas (CSS Grid)

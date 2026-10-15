@@ -20,7 +20,20 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#f5f5f7">
     <meta name="description" content="Sistema Institucional de Certificaciones y Validación QR — Kredentia">
-    <title>Kredentia | Autenticación Institucional</title>
+    <?php
+    // Sistema dinámico de títulos para Kredentia
+    $tituloActual = trim((string)($page_title ?? ''));
+    $tituloLower  = mb_strtolower($tituloActual, 'UTF-8');
+
+    if ($tituloActual === '' || in_array($tituloLower, ['inicio', 'dashboard', 'panel de control'], true)) {
+        $metaTitle = 'Kredentia';
+    } elseif (in_array($tituloLower, ['login', 'inicio de sesión', 'inicio de sesion'], true)) {
+        $metaTitle = 'Inicio de Sesión | Kredentia';
+    } else {
+        $metaTitle = htmlspecialchars($tituloActual, ENT_QUOTES, 'UTF-8') . ' | Kredentia';
+    }
+    ?>
+    <title><?= $metaTitle ?></title>
 
     <!-- Favicon Kredentia -->
     <link rel="icon" type="image/png" href="<?= (defined('BASE_URL') && BASE_URL !== '') ? BASE_URL . '/' : '' ?>assets/img/favicon.png">
@@ -1093,19 +1106,32 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             pointer-events: auto;
         }
 
-        /* 1. Contenedor de tablas responsivo (Scroll horizontal suave) */
-        .table-responsive {
-            width: 100%;
-            max-width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            border-radius: 20px;
+        /* 1. Contenedor de tablas responsivo estricto (Scroll horizontal suave) */
+        .table-responsive,
+        .table-container-responsive {
+            width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: visible !important;
+            -webkit-overflow-scrolling: touch !important;
+            border-radius: 8px; /* Para mantener estética Apple */
             margin-bottom: 12px;
+            display: block;
         }
 
-        .table-responsive table {
-            min-width: 720px;
+        .table-responsive table,
+        .table-container-responsive table,
+        .table-minimal-ios,
+        .clean-table,
+        .users-table {
+            min-width: 800px !important;
             width: 100%;
+        }
+
+        .table-responsive th,
+        .table-responsive td,
+        .table-container-responsive th,
+        .table-container-responsive td {
+            white-space: nowrap !important;
         }
 
         /* 2. Media Query para Tablets y Laptops Pequeñas (<= 1024px) */
@@ -1142,8 +1168,142 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             }
         }
 
-        /* 3. Media Query para Smartphones (<= 768px) */
+        /* 3. Media Query para Smartphones (<= 768px) - iOS Bottom Tab Bar */
         @media (max-width: 768px) {
+            /* ── A. Transformación del Sidebar en Bottom Tab Bar Nativa tipo iOS ── */
+            .sidebar {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                top: auto !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: unset !important;
+                max-height: unset !important;
+                transform: none !important;
+                z-index: 9999 !important;
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-around !important;
+                align-items: center !important;
+                background: rgba(255, 255, 255, 0.85) !important;
+                backdrop-filter: blur(20px) !important;
+                -webkit-backdrop-filter: blur(20px) !important;
+                border-right: none !important;
+                border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04), 0 -1px 3px rgba(0, 0, 0, 0.02) !important;
+                padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px)) 10px !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+
+            /* ── B. Limpieza Visual en Móvil ── */
+            .sidebar-brand,
+            .nav-section-title,
+            #network-status,
+            .network-status,
+            .sidebar-overlay,
+            .btn-toggle-sidebar {
+                display: none !important;
+            }
+
+            /* ── C. Contenedor de Enlaces Horizontal ── */
+            .sidebar-nav {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-around !important;
+                align-items: center !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                gap: 4px !important;
+            }
+
+            /* ── D. Pestañas / Enlaces Individuales ── */
+            .sidebar a,
+            .sidebar-nav .nav-item {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                padding: 4px 6px !important;
+                margin: 0 !important;
+                border-radius: 10px !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                transform: none !important;
+                animation: none !important;
+                text-decoration: none !important;
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                -webkit-tap-highlight-color: transparent !important;
+            }
+
+            .sidebar a:hover,
+            .sidebar-nav .nav-item:hover {
+                transform: none !important;
+                background: rgba(15, 23, 42, 0.03) !important;
+            }
+
+            /* Íconos de Pestaña */
+            .sidebar a i,
+            .sidebar-nav .nav-item i {
+                font-size: 1.25rem !important;
+                margin: 0 0 3px 0 !important;
+                width: auto !important;
+                height: auto !important;
+                display: block !important;
+                color: #94a3b8 !important;
+                line-height: 1 !important;
+                transition: color 0.2s ease, transform 0.2s ease !important;
+            }
+
+            /* Tipografía Microscópica Estilo iOS */
+            .sidebar a span,
+            .sidebar-nav .nav-item span {
+                font-size: 10px !important;
+                font-weight: 500 !important;
+                letter-spacing: -0.01em !important;
+                margin-top: 4px !important;
+                display: block !important;
+                text-align: center !important;
+                color: #64748b !important;
+                line-height: 1.15 !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                max-width: 100% !important;
+            }
+
+            /* Pestaña Activa estilo iOS */
+            .sidebar a.active,
+            .sidebar-nav .nav-item.active {
+                background: rgba(55, 48, 163, 0.08) !important;
+                box-shadow: none !important;
+            }
+
+            .sidebar a.active i,
+            .sidebar-nav .nav-item.active i {
+                color: var(--primary-indigo, #3730a3) !important;
+                transform: scale(1.1) !important;
+            }
+
+            .sidebar a.active span,
+            .sidebar-nav .nav-item.active span {
+                color: var(--primary-indigo, #3730a3) !important;
+                font-weight: 700 !important;
+            }
+
+            /* ── E. Ajuste del Contenedor Principal (Main Wrapper) ── */
+            .main-wrapper,
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding-bottom: 90px !important;
+            }
+
             .hide-on-mobile {
                 display: none !important;
             }
@@ -1178,17 +1338,108 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
                 gap: 14px !important;
             }
 
-            .dashboard-neo-actions {
-                width: 100%;
-                display: flex;
-                flex-direction: row;
-                gap: 10px;
+            /* ── Contenedor de Botones de Acción Superiores en Móvil ── */
+            .dashboard-neo-actions,
+            .btn-actions-group,
+            .action-bar,
+            .actions-bar,
+            .toolbar-actions {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+                width: 100% !important;
+                margin-bottom: 20px !important;
+                box-sizing: border-box !important;
             }
 
+            /* Estilo Unificado para Botones de Acción en Móvil */
             .dashboard-neo-actions button,
-            .dashboard-neo-actions a {
-                flex: 1;
-                justify-content: center;
+            .dashboard-neo-actions a,
+            .btn-actions-group button,
+            .btn-actions-group a,
+            .action-bar button,
+            .action-bar a,
+            .btn-action-excel,
+            .btn-excel-green,
+            .btn-excel,
+            .btn-action-indigo,
+            .btn-registro-indigo,
+            .btn-primary,
+            .btn-apple-primary,
+            .btn-apple-secondary {
+                width: 100% !important;
+                height: auto !important;
+                min-height: 48px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                padding: 14px 18px !important;
+                border-radius: 12px !important;
+                font-size: 0.92rem !important;
+                font-weight: 600 !important;
+                box-sizing: border-box !important;
+                text-decoration: none !important;
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            }
+
+            /* Botón "Carga Excel": Fondo blanco sólido puro con borde verde esmeralda y detalle nítido */
+            .btn-action-excel,
+            .btn-excel-green,
+            .btn-excel,
+            .btn-apple-secondary {
+                background: #ffffff !important;
+                color: #047857 !important;
+                border: 1.5px solid #10b981 !important;
+                box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12) !important;
+            }
+
+            .btn-action-excel:active,
+            .btn-excel-green:active,
+            .btn-excel:active {
+                background: #f0fdf4 !important;
+            }
+
+            .btn-action-excel i,
+            .btn-excel-green i,
+            .btn-excel i {
+                color: #10b981 !important;
+                font-size: 1.1rem !important;
+                margin-right: 8px !important;
+            }
+
+            /* Botón "Nuevo Registro / Primario": Fondo índigo sólido con sombra premium */
+            .btn-action-indigo,
+            .btn-registro-indigo,
+            .btn-primary,
+            .btn-apple-primary {
+                background: var(--primary-indigo, #3730a3) !important;
+                color: #ffffff !important;
+                border: 1px solid rgba(255, 255, 255, 0.15) !important;
+                box-shadow: 0 4px 16px rgba(55, 48, 163, 0.28) !important;
+            }
+
+            .btn-action-indigo:active,
+            .btn-registro-indigo:active {
+                background: var(--primary-indigo-hover, #312e81) !important;
+            }
+
+            .btn-action-indigo i,
+            .btn-registro-indigo i {
+                color: #ffffff !important;
+                font-size: 1rem !important;
+                margin-right: 8px !important;
+            }
+
+            /* Toolbars en vistas como Directorio */
+            .toolbar-funcionarios {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 14px !important;
+            }
+
+            .search-wrapper-ios {
+                max-width: 100% !important;
+                width: 100% !important;
             }
 
             .bento-grid {

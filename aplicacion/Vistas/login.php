@@ -1,4 +1,6 @@
 <?php
+$page_title = 'Inicio de Sesión';
+
 /**
  * Vista de Inicio de Sesión — Kredentia
  * Diseño: Ultra-Premium Split Card Layout con Columna Izquierda Cristalina y Fondo Dot-Grid
@@ -17,7 +19,7 @@ $assetPrefix = !empty($baseUrl) ? rtrim($baseUrl, '/') . '/' : '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#f8fafc">
     <meta name="description" content="Kredentia — Plataforma de Autenticación Institucional">
-    <title>Kredentia | Autenticación Institucional</title>
+    <title><?= !empty($page_title) ? htmlspecialchars($page_title, ENT_QUOTES, 'UTF-8') . ' | Kredentia' : 'Inicio de Sesión | Kredentia' ?></title>
 
     <!-- Favicon Kredentia -->
     <link rel="icon" type="image/png" href="<?= htmlspecialchars($assetPrefix) ?>assets/img/favicon.png">

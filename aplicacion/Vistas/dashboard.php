@@ -1,4 +1,6 @@
 <?php
+$page_title = 'Inicio';
+
 /**
  * Vista de Dashboard — Sistema Institucional de Certificaciones ISPEB
  * Implementación modular con plantillas maestras (Layout Header + Footer)
