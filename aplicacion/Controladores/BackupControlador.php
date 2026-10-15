@@ -40,7 +40,7 @@ class BackupControlador
             exit();
         }
 
-        $vista = APP_DIR . '/vistas/reportes.php';
+        $vista = APP_DIR . '/Vistas/reportes.php';
         if (!file_exists($vista)) {
             http_response_code(500);
             die('[ISPEB] Vista de reportes no encontrada en: ' . $vista);

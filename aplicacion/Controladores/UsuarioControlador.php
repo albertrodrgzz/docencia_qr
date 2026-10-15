@@ -18,7 +18,7 @@ class UsuarioControlador
     private const BASE_URL = '/docencia_qr';
 
     /** Directorio físico donde se ubican las vistas */
-    private const VISTAS_DIR = APP_DIR . '/vistas';
+    private const VISTAS_DIR = APP_DIR . '/Vistas';
 
     private UsuarioModelo $modelo;
 

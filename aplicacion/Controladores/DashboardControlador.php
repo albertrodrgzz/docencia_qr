@@ -17,7 +17,7 @@ class DashboardControlador
     private const BASE_URL = '/docencia_qr';
 
     /** Ruta física de las vistas */
-    private const VISTAS_DIR = APP_DIR . '/vistas';
+    private const VISTAS_DIR = APP_DIR . '/Vistas';
 
     // ────────────────────────────────────────────────────────────────────────
     // Métodos públicos del controlador

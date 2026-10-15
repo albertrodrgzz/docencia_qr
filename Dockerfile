@@ -36,6 +36,9 @@ RUN mkdir -p /var/www/html/almacenamiento/logs \
              /var/www/html/almacenamiento/qrs \
              /var/www/html/almacenamiento/exportaciones \
              /var/www/html/almacenamiento/respaldos_bd \
+    && ln -s /var/www/html/aplicacion/Vistas /var/www/html/aplicacion/vistas 2>/dev/null || true \
+    && ln -s /var/www/html/aplicacion/Controladores /var/www/html/aplicacion/controladores 2>/dev/null || true \
+    && ln -s /var/www/html/aplicacion/Modelos /var/www/html/aplicacion/modelos 2>/dev/null || true \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/almacenamiento
 
