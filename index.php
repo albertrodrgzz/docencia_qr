@@ -16,6 +16,42 @@ define('STORAGE_DIR',  APP_ROOT . '/almacenamiento');
 define('BASE_URL',     '/docencia_qr');
 define('VERSION',      '1.0.0');
 
+// ── 1.1 Carga segura de variables de entorno (.env) ──────────────────────────
+$envFile = APP_ROOT . '/.env';
+if (file_exists($envFile)) {
+    $lineasEnv = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lineasEnv !== false) {
+        foreach ($lineasEnv as $linea) {
+            $linea = trim($linea);
+            if ($linea === '' || str_starts_with($linea, '#') || str_starts_with($linea, ';')) {
+                continue;
+            }
+            if (str_contains($linea, '=')) {
+                [$clave, $valor] = explode('=', $linea, 2);
+                $clave = trim($clave);
+                $valor = trim($valor, " \t\n\r\0\x0B\"'");
+                putenv("{$clave}={$valor}");
+                $_ENV[$clave] = $valor;
+                $_SERVER[$clave] = $valor;
+            }
+        }
+    }
+}
+
+// ── 1.2 Helper global anti-XSS ───────────────────────────────────────────────
+if (!function_exists('sanitizar')) {
+    function sanitizar(mixed $valor): string
+    {
+        return htmlspecialchars((string) ($valor ?? ''), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+    }
+}
+if (!function_exists('e')) {
+    function e(mixed $valor): string
+    {
+        return sanitizar($valor);
+    }
+}
+
 // ── 2. Autoloader de Composer ────────────────────────────────────────────────
 $autoload = VENDOR_DIR . '/autoload.php';
 
@@ -27,20 +63,76 @@ if (!file_exists($autoload)) {
 require_once $autoload;
 
 // ── 3. Configuración de errores según entorno ────────────────────────────────
-// En producción cambiar a: error_reporting(0); ini_set('display_errors', '0');
+$esProduccion = (getenv('APP_ENV') === 'production');
+
 error_reporting(E_ALL);
-ini_set('display_errors', '1');
+
+// Carpeta de registros protegida
+$dirLogs = STORAGE_DIR . '/logs';
+if (!is_dir($dirLogs)) {
+    @mkdir($dirLogs, 0755, true);
+}
 ini_set('log_errors', '1');
+ini_set('error_log', $dirLogs . '/error.log');
+
+if ($esProduccion) {
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+
+    // Manejador global de excepciones limpio en producción
+    set_exception_handler(function (\Throwable $e) {
+        error_log(sprintf(
+            "[EXCEPCIÓN CRÍTICA] %s en %s:%d\nStack Trace:\n%s",
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            $e->getTraceAsString()
+        ));
+
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'exito'   => false,
+                'mensaje' => 'Error interno en el servidor. Por favor, contacte al soporte técnico.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit();
+        }
+
+        die('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Error del Sistema | Kredentia</title>'
+          . '<style>body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;}'
+          . '.card{background:#161b22;padding:2.5rem;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.5);text-align:center;max-width:460px;border:1px solid #30363d;}'
+          . 'h1{color:#f85149;margin-bottom:0.5rem;font-size:1.5rem;}p{color:#8b949e;line-height:1.5;font-size:0.95rem;}'
+          . 'a{display:inline-block;margin-top:1.5rem;color:#58a6ff;text-decoration:none;font-weight:500;border:1px solid #30363d;padding:0.6rem 1.2rem;border-radius:8px;}'
+          . 'a:hover{background:#21262d;}</style></head><body><div class="card">'
+          . '<h1>500 | Error del Sistema</h1><p>El servicio experimentó un inconveniente inesperado. El evento ha sido registrado internamente para su pronta resolución.</p>'
+          . '<a href="/docencia_qr/login">Volver al inicio</a></div></body></html>');
+    });
+} else {
+    // Entorno local / desarrollo: muestra errores para depuración rápida
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+}
 
 // ── 4. Inicio de sesión seguro ───────────────────────────────────────────────
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
+
+    $esHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+               || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)
+               || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
     session_set_cookie_params([
         'lifetime' => 0,           // Sesión expira al cerrar el navegador
         'path'     => '/',
         'domain'   => '',
-        'secure'   => false,       // Cambiar a true en producción con HTTPS
+        'secure'   => $esHttps,    // Seguro automáticamente en HTTPS
         'httponly' => true,        // Previene acceso desde JavaScript (XSS)
-        'samesite' => 'Strict',   // Protege contra CSRF
+        'samesite' => 'Strict',    // Protege contra CSRF
     ]);
     session_name('ISPEB_SESS');
     session_start();

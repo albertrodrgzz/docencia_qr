@@ -1,6 +1,13 @@
 # Dependencias de Composer (Se instalan con composer install, no se suben)
 /vendor/
 
+# Variables de entorno y credenciales sensibles
+/.env
+
+# Registros internos y logs
+/almacenamiento/logs/
+*.log
+
 # Archivos generados dinámicamente
 /almacenamiento/qrs/*.png
 /almacenamiento/exportaciones/*.zip
@@ -8,4 +15,4 @@
 
 # Archivos del sistema operativo
 .DS_Store
-Thumbs.db
+Thumbs.db
