@@ -21,7 +21,7 @@ Options +FollowSymLinks
 # ── 3. Motor de reescritura y Front Controller ───────────────────────────────
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /docencia_qr/
+    # RewriteBase dinámico y agnóstico (funciona en /docencia_qr/ en Laragon y en / en Docker o Producción)
 
     # 3.1. Prohibir acceso HTTP directo a carpetas con lógica privada y logs
     RewriteRule ^(aplicacion|configuracion|almacenamiento|database|vendor)(/.*)?$ - [F,L,NC]

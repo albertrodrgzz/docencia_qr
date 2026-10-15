@@ -26,15 +26,17 @@ class BackupControlador
             session_start();
         }
 
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
         if (empty($_SESSION['auth']) || empty($_SESSION['id_usuario'])) {
-            header('Location: ' . self::BASE_URL . '/login');
+            header('Location: ' . $base . '/login');
             exit();
         }
 
         // RBAC: Solo administradores pueden acceder a Reportes y Respaldos
         $rol = strtolower(trim((string) ($_SESSION['rol'] ?? '')));
         if ($rol !== 'admin' && $rol !== 'administrador') {
-            header('Location: ' . self::BASE_URL . '/dashboard');
+            header('Location: ' . $base . '/dashboard');
             exit();
         }
 
@@ -59,8 +61,10 @@ class BackupControlador
             session_start();
         }
 
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
         if (empty($_SESSION['auth']) || empty($_SESSION['id_usuario'])) {
-            header('Location: ' . self::BASE_URL . '/');
+            header('Location: ' . $base . '/login');
             exit();
         }
 
@@ -192,8 +196,10 @@ SQL;
             session_start();
         }
 
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
         if (empty($_SESSION['auth']) || empty($_SESSION['id_usuario'])) {
-            header('Location: ' . self::BASE_URL . '/login');
+            header('Location: ' . $base . '/login');
             exit();
         }
 

@@ -34,9 +34,11 @@ class UsuarioControlador
     {
         $this->modelo = $modelo ?? new UsuarioModelo();
 
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
         // Verificar sesión activa
         if (empty($_SESSION['auth']) || empty($_SESSION['id_usuario'])) {
-            header('Location: ' . self::BASE_URL . '/login');
+            header('Location: ' . $base . '/login');
             exit();
         }
 
@@ -55,7 +57,7 @@ class UsuarioControlador
             }
 
             // Acceso denegado en navegación directa
-            header('Location: ' . self::BASE_URL . '/dashboard');
+            header('Location: ' . $base . '/dashboard');
             exit();
         }
     }

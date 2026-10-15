@@ -104,19 +104,24 @@ class AuthControlador
             $_SESSION['auth']       = true;
             $_SESSION['login_at']   = time();
 
+            $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
             http_response_code(200);
             echo json_encode([
                 'exito'     => true,
                 'rol'       => $usuario['rol'],
-                'redirigir' => self::BASE_URL . '/dashboard',
+                'redirigir' => $base . '/dashboard',
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Throwable $e) {
             error_log(sprintf('[AuthControlador::procesarLogin Error] %s', $e->getMessage()));
             http_response_code(500);
+            $msg = (getenv('APP_ENV') === 'local' || getenv('APP_ENV') === 'development')
+                ? $e->getMessage()
+                : 'Error interno del servidor. Intente nuevamente.';
             echo json_encode([
                 'exito'   => false,
-                'mensaje' => 'Error interno del servidor. Intente nuevamente.',
+                'mensaje' => $msg,
             ], JSON_UNESCAPED_UNICODE);
         }
     }
@@ -169,7 +174,8 @@ class AuthControlador
      */
     private function redirigir(string $ruta): void
     {
-        header('Location: ' . self::BASE_URL . $ruta);
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+        header('Location: ' . $base . $ruta);
         exit();
     }
 }

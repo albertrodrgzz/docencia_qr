@@ -403,12 +403,29 @@ $assetPrefix = !empty($baseUrl) ? rtrim($baseUrl, '/') . '/' : '';
         }
 
         .swal2-confirm.apple-confirm-btn {
-            background-color: var(--color-indigo-dark) !important;
-            border-radius: 10px !important;
-            padding: 10px 22px !important;
-            font-size: 0.9rem !important;
+            background: linear-gradient(135deg, #1e1b4b, #312e81) !important;
+            color: #ffffff !important;
+            border-radius: 12px !important;
+            padding: 12px 28px !important;
+            font-size: 0.92rem !important;
             font-weight: 600 !important;
-            box-shadow: none !important;
+            letter-spacing: 0.01em !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            box-shadow: 0 4px 14px rgba(30, 27, 75, 0.35) !important;
+            cursor: pointer !important;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            outline: none !important;
+        }
+
+        .swal2-confirm.apple-confirm-btn:hover {
+            background: linear-gradient(135deg, #2e1065, #3730a3) !important;
+            color: #ffffff !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(49, 46, 129, 0.45) !important;
+        }
+
+        .swal2-confirm.apple-confirm-btn:active {
+            transform: translateY(0) !important;
         }
 
         /* ── Responsividad (Móviles / Tablets < 768px) ── */

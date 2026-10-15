@@ -13,7 +13,6 @@ define('APP_DIR',      APP_ROOT . '/aplicacion');
 define('CONFIG_DIR',   APP_ROOT . '/configuracion');
 define('VENDOR_DIR',   APP_ROOT . '/vendor');
 define('STORAGE_DIR',  APP_ROOT . '/almacenamiento');
-define('BASE_URL',     '/docencia_qr');
 define('VERSION',      '1.0.0');
 
 // ── 1.1 Carga segura de variables de entorno (.env) ──────────────────────────
@@ -37,6 +36,14 @@ if (file_exists($envFile)) {
         }
     }
 }
+
+// ── 1.2 Detección dinámica y agnóstica de BASE_URL ────────────────────────────
+// Detecta automáticamente si la aplicación corre en un subdirectorio (ej. Laragon: '/docencia_qr')
+// o en la raíz de un dominio o contenedor Docker (ej: '')
+$scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+$autoBaseUrl = ($scriptDir === '/' || $scriptDir === '\\' || $scriptDir === '.') ? '' : rtrim($scriptDir, '/');
+$baseUrlDefinido = getenv('APP_BASE_PATH') !== false ? rtrim((string)getenv('APP_BASE_PATH'), '/') : $autoBaseUrl;
+define('BASE_URL',     $baseUrlDefinido);
 
 // ── 1.2 Helper global anti-XSS ───────────────────────────────────────────────
 if (!function_exists('sanitizar')) {
@@ -150,10 +157,9 @@ require_once CONFIG_DIR . '/ConexionBD.php';
 // ── 6. Enrutador: captura y parseo de la URL solicitada ──────────────────────
 $requestUri  = $_SERVER['REQUEST_URI'] ?? '/';
 
-// Eliminar el prefijo del subdirectorio si la app corre en una subcarpeta
-$baseDir     = '/docencia_qr';
-if (str_starts_with($requestUri, $baseDir)) {
-    $requestUri = substr($requestUri, strlen($baseDir));
+// Eliminar el prefijo del subdirectorio si la app corre en subcarpeta
+if (BASE_URL !== '' && str_starts_with($requestUri, BASE_URL)) {
+    $requestUri = substr($requestUri, strlen(BASE_URL));
 }
 $requestUri  = $requestUri ?: '/';
 
@@ -244,7 +250,7 @@ if ($esRutaRestringida) {
         }
 
         // Si es navegación directa, redirigir al dashboard con sesión activa o al login
-        $destino = (!empty($_SESSION['auth'])) ? ($baseDir . '/dashboard') : ($baseDir . '/login');
+        $destino = (!empty($_SESSION['auth'])) ? (BASE_URL . '/dashboard') : (BASE_URL . '/login');
         header('Location: ' . $destino);
         exit();
     }

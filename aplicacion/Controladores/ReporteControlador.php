@@ -353,7 +353,8 @@ HTML;
                 exit();
             }
 
-            header('Location: ' . self::BASE_URL . '/login');
+            $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+            header('Location: ' . $base . '/login');
             exit();
         }
     }

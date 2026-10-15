@@ -81,16 +81,41 @@ final class ConexionBD
                 PDO::ATTR_EMULATE_PREPARES   => false,
                 // Respetar tipos de datos nativos devueltos por el controlador
                 PDO::ATTR_STRINGIFY_FETCHES  => false,
+                // Timeout de 5s para prevenir bloqueos indefinidos en servidores remotos
+                PDO::ATTR_TIMEOUT            => 5,
             ];
+
+            // Soporte SSL automático para bases de datos Cloud (Aiven, PlanetScale, AWS)
+            if (getenv('DB_SSL') === 'true' || (int)$port !== 3306 || str_contains($host, 'aivencloud.com')) {
+                $opciones[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+            }
 
             try {
                 self::$conexion = new PDO($dsn, $user, $pass, $opciones);
             } catch (PDOException $e) {
-                // Registrar el error detallado internamente sin exponer credenciales
-                error_log(sprintf('[ConexionBD Error] Fallo de conexión PDO: %s', $e->getMessage()));
+                // Registrar el error detallado internamente
+                error_log(sprintf('[ConexionBD Error] Fallo de conexión PDO a [%s/%s con usuario %s]: %s', $host, $dbName, $user, $e->getMessage()));
+
+                $esLocal = (getenv('APP_ENV') === 'local' || getenv('APP_ENV') === 'development' || empty(getenv('APP_ENV')));
+
+                // Fallback automático en entorno local si el host remoto configurado no responde o rechaza permisos
+                if ($esLocal && $host !== '127.0.0.1' && $host !== 'localhost') {
+                    try {
+                        error_log('[ConexionBD Fallback] Activando conexión de respaldo a MySQL local 127.0.0.1...');
+                        $dsnLocal = "mysql:host=127.0.0.1;port=3306;dbname=ispeb_certificaciones;charset=utf8mb4";
+                        self::$conexion = new PDO($dsnLocal, 'root', '', $opciones);
+                        return self::$conexion;
+                    } catch (PDOException $eLocal) {
+                        error_log(sprintf('[ConexionBD Fallback Error] Fallo también en MySQL local: %s', $eLocal->getMessage()));
+                    }
+                }
+
+                $mensaje = $esLocal
+                    ? sprintf("Error de conexión a la base de datos [%s]: %s", $host, $e->getMessage())
+                    : "Error de conexión con la base de datos institucional. Por favor, contacte al administrador.";
 
                 throw new RuntimeException(
-                    "Error de conexión con la base de datos institucional. Por favor, contacte al administrador.",
+                    $mensaje,
                     (int) $e->getCode(),
                     $e
                 );

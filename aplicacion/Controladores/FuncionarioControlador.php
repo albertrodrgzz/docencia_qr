@@ -497,6 +497,11 @@ class FuncionarioControlador
      */
     private function obtenerBaseUrl(): string
     {
+        $appUrl = getenv('APP_URL');
+        if (!empty($appUrl) && (str_starts_with($appUrl, 'http://') || str_starts_with($appUrl, 'https://'))) {
+            return rtrim($appUrl, '/');
+        }
+
         $baseUrl = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
 
         if (str_starts_with($baseUrl, 'http://') || str_starts_with($baseUrl, 'https://')) {

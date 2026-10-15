@@ -138,14 +138,16 @@ class RespaldoControlador
             session_start();
         }
 
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
         if (empty($_SESSION['auth']) || empty($_SESSION['id_usuario'])) {
-            header('Location: ' . self::BASE_URL . '/login');
+            header('Location: ' . $base . '/login');
             exit();
         }
 
         $rol = strtolower(trim((string) ($_SESSION['rol'] ?? '')));
         if ($rol !== 'admin' && $rol !== 'administrador') {
-            header('Location: ' . self::BASE_URL . '/dashboard');
+            header('Location: ' . $base . '/dashboard');
             exit();
         }
     }

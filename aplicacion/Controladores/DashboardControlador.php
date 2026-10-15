@@ -68,7 +68,8 @@ class DashboardControlador
      */
     private function redirigir(string $ruta): void
     {
-        header('Location: ' . self::BASE_URL . $ruta);
+        $base = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+        header('Location: ' . $base . $ruta);
         exit();
     }
 }
