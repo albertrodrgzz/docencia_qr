@@ -29,7 +29,7 @@ class ReporteControlador
      */
     public function index(): void
     {
-        $this->verificarPermisosAdmin();
+        $this->requiereAuth();
 
         $vista = dirname(__DIR__) . '/Vistas/reportes.php';
         if (!file_exists($vista)) {
@@ -47,7 +47,7 @@ class ReporteControlador
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        $this->verificarPermisosAdmin();
+        $this->requiereAuth();
 
         $busqueda     = trim((string) ($_GET['busqueda'] ?? $_GET['texto'] ?? ''));
         $departamento = trim((string) ($_GET['departamento'] ?? $_GET['dept'] ?? ''));
@@ -90,7 +90,7 @@ class ReporteControlador
         // Silenciar avisos de deprecación o notices que puedan corromper los encabezados HTTP del PDF
         error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
-        $this->verificarPermisosAdmin();
+        $this->requiereAuth();
 
         // ── 1. Capturar y sanear filtros de búsqueda desde $_GET ───────────
         $filtros = [
@@ -333,22 +333,27 @@ HTML;
     }
 
     /**
-     * Guardia de seguridad institucional: solo usuarios con rol administrador.
+     * Guardia de autenticación institucional: confirma que el usuario tenga sesión activa.
+     * Permite acceso pleno tanto a administradores como a usuarios con rol estándar.
      */
-    private function verificarPermisosAdmin(): void
+    private function requiereAuth(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
         if (empty($_SESSION['auth']) || empty($_SESSION['id_usuario'])) {
-            header('Location: ' . self::BASE_URL . '/login');
-            exit();
-        }
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                http_response_code(401);
+                echo json_encode([
+                    'estado'  => 'error',
+                    'exito'   => false,
+                    'mensaje' => 'Sesión expirada. Por favor inicie sesión nuevamente.'
+                ], JSON_UNESCAPED_UNICODE);
+                exit();
+            }
 
-        $rol = strtolower(trim((string) ($_SESSION['rol'] ?? '')));
-        if ($rol !== 'admin' && $rol !== 'administrador') {
-            header('Location: ' . self::BASE_URL . '/dashboard');
+            header('Location: ' . self::BASE_URL . '/login');
             exit();
         }
     }

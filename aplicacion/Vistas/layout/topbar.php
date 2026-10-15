@@ -10,33 +10,56 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', (isset($_SERVER['REQUEST_URI']) && str_starts_with($_SERVER['REQUEST_URI'], '/docencia_qr')) ? '/docencia_qr' : '');
 }
 
+// Capturar la ruta actual limpia restando BASE_URL para determinar vista raíz
+$rutaActual = str_replace(BASE_URL, '', parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '');
+$rutaLimpia = trim($rutaActual, '/');
+if ($rutaLimpia === '') {
+    $rutaLimpia = 'dashboard';
+}
+
+$esDashboard = in_array($rutaLimpia, ['dashboard', ''], true) || (isset($tituloVista) && in_array(strtolower((string)$tituloVista), ['panel de control', 'dashboard'], true) && ($mostrarBotonAtras ?? false) === false);
+
+$urlAnterior = $_SERVER['HTTP_REFERER'] ?? BASE_URL . '/dashboard';
+$urlActual = $_SERVER['REQUEST_URI'];
+
+// Si la URL actual ya tiene el flag de retorno, o si no hay referer, forzamos ir al dashboard
+if (isset($_GET['volver']) || empty($_SERVER['HTTP_REFERER']) || strpos($urlAnterior, $urlActual) !== false) {
+    $urlDestino = BASE_URL . '/dashboard';
+} else {
+    // Le agregamos la bandera de retroceso a la URL anterior
+    $separador = (parse_url($urlAnterior, PHP_URL_QUERY) == NULL) ? '?' : '&';
+    $urlDestino = $urlAnterior . $separador . 'volver=true';
+}
+
 $nombreSesion  = $_SESSION['nombre'] ?? (!empty($_SESSION['correo']) ? explode('@', $_SESSION['correo'])[0] : 'admin');
 $nombreUsuario = htmlspecialchars((string) $nombreSesion, ENT_QUOTES, 'UTF-8');
 $rolUsuario    = htmlspecialchars((string) ($_SESSION['rol'] ?? 'Administrador'), ENT_QUOTES, 'UTF-8');
 $badgeIniciales = strtoupper(substr($nombreUsuario, 0, 2)) ?: 'AD';
 ?>
-<header class="topbar">
-    <!-- Lado Izquierdo: Título de la página y botón atrás si aplica -->
+<header class="topbar" role="banner">
+    <!-- Lado Izquierdo: Botón de retroceso inteligente con bandera anti-bucles -->
     <div class="topbar-left">
-        <?php if (!empty($mostrarBotonAtras)): ?>
-            <button type="button" class="btn-back" onclick="history.back()" title="Regresar a la página anterior" aria-label="Volver">
+        <?php if (!$esDashboard): ?>
+            <a href="<?= htmlspecialchars($urlDestino, ENT_QUOTES, 'UTF-8') ?>" class="topbar-btn-atras" title="Regresar" aria-label="Atrás">
                 <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
-            </button>
+                <span>Atrás</span>
+            </a>
         <?php endif; ?>
-        <h1 class="page-title"><?= htmlspecialchars($tituloVista ?? 'Panel', ENT_QUOTES, 'UTF-8') ?></h1>
     </div>
 
-    <!-- Lado Derecho: Tarjeta de Usuario con Badge y Botón Cerrar Sesión -->
+    <!-- Lado Derecho: Píldora redondeada de usuario con avatar circular, nombre, rol y punto verde de estado -->
     <div class="topbar-right">
-        <!-- Enlace al Perfil del Usuario -->
-        <a href="<?= BASE_URL ?>/perfil" class="user-profile-badge" title="Ver mi perfil institucional">
-            <div class="user-avatar-initials"><?= $badgeIniciales ?></div>
-            <div class="user-text-info">
-                <span class="user-text-name"><?= $nombreUsuario ?></span>
-                <span class="user-text-role"><?= $rolUsuario ?></span>
+        <!-- Píldora de Perfil de Usuario -->
+        <a href="<?= BASE_URL ?>/perfil" class="user-pill-badge" title="Ver mi perfil institucional">
+            <div class="user-avatar-circle" aria-hidden="true"><?= $badgeIniciales ?></div>
+            <div class="user-pill-text">
+                <span class="user-pill-name"><?= $nombreUsuario ?></span>
+                <span class="user-pill-role"><?= $rolUsuario ?></span>
             </div>
+            <span class="user-live-dot" title="Usuario en línea" aria-label="En línea"></span>
         </a>
 
+        <!-- Botón Cerrar Sesión -->
         <a href="javascript:void(0)" onclick="confirmarSalida(event)" class="btn-topbar-logout" title="Cerrar sesión institucional">
             <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
             <span>Cerrar Sesión</span>

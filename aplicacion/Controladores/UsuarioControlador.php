@@ -94,6 +94,7 @@ class UsuarioControlador
             if ($nombre === '' || $correo === '' || $password === '') {
                 http_response_code(422);
                 echo json_encode([
+                    'estado'  => 'error',
                     'exito'   => false,
                     'mensaje' => 'Todos los campos (nombre, correo y contraseña) son obligatorios.',
                 ], JSON_UNESCAPED_UNICODE);
@@ -103,6 +104,7 @@ class UsuarioControlador
             if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
                 http_response_code(422);
                 echo json_encode([
+                    'estado'  => 'error',
                     'exito'   => false,
                     'mensaje' => 'El formato del correo electrónico institucional no es válido.',
                 ], JSON_UNESCAPED_UNICODE);
@@ -112,6 +114,7 @@ class UsuarioControlador
             if (strlen($password) < 6) {
                 http_response_code(422);
                 echo json_encode([
+                    'estado'  => 'error',
                     'exito'   => false,
                     'mensaje' => 'La contraseña debe tener un mínimo de 6 caracteres.',
                 ], JSON_UNESCAPED_UNICODE);
@@ -132,6 +135,7 @@ class UsuarioControlador
             if (!$resultado['exito']) {
                 http_response_code(409);
                 echo json_encode([
+                    'estado'  => 'error',
                     'exito'   => false,
                     'mensaje' => $resultado['error'] ?? 'No se pudo crear el usuario.',
                 ], JSON_UNESCAPED_UNICODE);
@@ -140,6 +144,7 @@ class UsuarioControlador
 
             http_response_code(201);
             echo json_encode([
+                'estado'  => 'ok',
                 'exito'   => true,
                 'mensaje' => "Usuario '{$nombre}' creado correctamente con rol '{$rolNormalizado}'.",
             ], JSON_UNESCAPED_UNICODE);
@@ -148,6 +153,7 @@ class UsuarioControlador
             error_log(sprintf('[UsuarioControlador::guardar Error] %s', $e->getMessage()));
             http_response_code(500);
             echo json_encode([
+                'estado'  => 'error',
                 'exito'   => false,
                 'mensaje' => 'Ocurrió un error interno en el servidor al crear el usuario.',
             ], JSON_UNESCAPED_UNICODE);

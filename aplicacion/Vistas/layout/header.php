@@ -38,24 +38,39 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-        /* ── Variables de Diseño Apple macOS / iPadOS ── */
+        /* ── Variables de Diseño Neo-Corporate / Apple ── */
         :root {
             --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
-            --apple-blue: #0071e3;
-            --apple-blue-hover: #0077ed;
-            --apple-blue-tint: rgba(0, 113, 227, 0.08);
-            --apple-purple: #af52de;
-            --apple-purple-tint: rgba(175, 82, 222, 0.10);
-            --apple-green: #34c759;
-            --apple-green-tint: rgba(52, 199, 89, 0.12);
-            --bg-page: #f5f5f7;
+            
+            /* Color Principal: Índigo Profundo Neo-Corporate */
+            --primary-indigo: #3730a3;
+            --primary-indigo-hover: #312e81;
+            --primary-indigo-light: #4338ca;
+            --primary-indigo-tint: rgba(55, 48, 163, 0.08);
+            --primary-indigo-glow: rgba(55, 48, 163, 0.22);
+            
+            /* Compatibilidad y Acentos */
+            --apple-blue: #3730a3;
+            --apple-blue-hover: #312e81;
+            --apple-blue-tint: rgba(55, 48, 163, 0.08);
+            --apple-purple: #7c3aed;
+            --apple-purple-tint: rgba(124, 58, 237, 0.10);
+            --apple-green: #10b981;
+            --apple-green-tint: rgba(16, 185, 129, 0.12);
+            --apple-emerald: #059669;
+            --apple-emerald-tint: rgba(5, 150, 105, 0.10);
+            
+            --bg-page: #fbfbfe;
             --bg-card: #ffffff;
-            --text-heading: #1d1d1f;
-            --text-secondary: #86868b;
-            --border-subtle: rgba(0, 0, 0, 0.06);
+            --text-heading: #0f172a;
+            --text-secondary: #64748b;
+            --border-subtle: rgba(15, 23, 42, 0.06);
             --sidebar-width: 260px;
-            --radius-card: 24px;
+            --radius-card: 20px;
             --radius-control: 12px;
+            --radius-pill: 9999px;
+            --shadow-subtle: 0 10px 30px rgba(0, 0, 0, 0.03);
+            --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.03);
         }
 
         /* ── Reseteo y Base Tipográfica ── */
@@ -66,13 +81,30 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         body {
             margin: 0;
             padding: 0;
-            background-color: #f2f2f7;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            color: #1d1d1f;
+            min-height: 100vh;
+            background-color: #fbfbfe;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(224, 231, 255, 0.45) 0px, transparent 45%),
+                radial-gradient(at 100% 0%, rgba(243, 232, 255, 0.40) 0px, transparent 40%),
+                radial-gradient(at 85% 85%, rgba(224, 242, 254, 0.45) 0px, transparent 45%),
+                radial-gradient(at 0% 100%, rgba(238, 242, 255, 0.50) 0px, transparent 45%),
+                radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.75) 0px, transparent 100%);
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-size: cover;
+            font-family: var(--font-family);
+            color: var(--text-heading);
             letter-spacing: -0.015em;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            min-height: 100vh;
+        }
+
+        /* Títulos: Inter con letter-spacing: -0.03em */
+        h1, h2, h3, h4, h5, h6, .page-title, .dashboard-main-title {
+            font-family: var(--font-family);
+            letter-spacing: -0.03em;
+            color: var(--text-heading);
+            font-weight: 700;
         }
 
         /* ── 1. Sidebar Fijo a la Izquierda (260px) ── */
@@ -83,11 +115,11 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             bottom: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: rgba(255, 255, 255, 0.70);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-right: 1px solid rgba(0, 0, 0, 0.07);
-            padding: 24px 16px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-right: 1px solid rgba(15, 23, 42, 0.06);
+            padding: 24px 16px 20px 16px;
             display: flex;
             flex-direction: column;
             z-index: 90;
@@ -98,24 +130,24 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 8px 12px 24px 12px;
+            padding: 6px 10px 20px 10px;
             text-decoration: none;
             color: var(--text-heading);
             border-bottom: 1px solid var(--border-subtle);
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         .brand-icon-sq {
             width: 38px;
             height: 38px;
-            background: linear-gradient(135deg, var(--apple-blue) 0%, #0051c6 100%);
-            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary-indigo) 0%, #2e2687 100%);
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
             font-size: 1.1rem;
-            box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
+            box-shadow: 0 4px 14px rgba(55, 48, 163, 0.28);
         }
 
         .brand-text {
@@ -155,39 +187,41 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         }
 
         .sidebar a {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 1.05rem;
+            font-family: var(--font-family);
+            font-size: 0.95rem;
             font-weight: 500;
             letter-spacing: -0.015em;
-            color: #515154;
-            padding: 12px 20px;
-            border-radius: 12px;
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); /* Transición Apple */
-            /* Animación de cascada al cargar el menú */
-            animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            color: #475569;
+            padding: 11px 16px;
+            border-radius: 14px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             display: flex;
             align-items: center;
             text-decoration: none;
             box-sizing: border-box;
+            position: relative;
         }
 
         .sidebar a:hover {
-            background: rgba(0, 0, 0, 0.04);
-            transform: translateX(6px); /* Efecto de deslizamiento sutil al pasar el mouse */
-            color: #1d1d1f;
+            background: rgba(15, 23, 42, 0.04);
+            transform: translateX(4px);
+            color: var(--text-heading);
         }
 
+        /* Ítem Activo: Fondo índigo #3730a3, texto blanco y esquinas redondeadas */
         .sidebar a.active {
-            background: #0071e3;
+            background: var(--primary-indigo, #3730a3) !important;
             color: #ffffff !important;
             font-weight: 600;
-            box-shadow: 0 4px 14px rgba(0, 113, 227, 0.3); /* Resplandor azul en el botón activo */
-            transform: none; /* Que el botón activo no se mueva al hacer hover */
+            border-radius: 14px;
+            box-shadow: 0 6px 18px rgba(55, 48, 163, 0.25);
+            transform: none !important;
         }
 
         .sidebar a.active:hover {
-            transform: none;
-            background: #0071e3;
+            transform: none !important;
+            background: var(--primary-indigo-hover, #312e81) !important;
             color: #ffffff !important;
         }
 
@@ -202,18 +236,68 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         }
 
         .sidebar a i {
-            width: 28px;
-            font-size: 1.2rem;
+            width: 24px;
+            font-size: 1.15rem;
             text-align: center;
             margin-right: 12px;
-            color: #86868b;
-            transition: color 0.3s ease;
+            color: #94a3b8;
+            transition: color 0.2s ease;
             display: inline-block;
             flex-shrink: 0;
         }
 
         .sidebar a.active i {
             color: #ffffff !important;
+        }
+
+        /* ── Contenedor Flotante de Estado Inferior del Sidebar ── */
+        .sidebar-bottom-status {
+            margin-top: auto;
+            background: #f8fafc;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: 14px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-bottom-status:hover {
+            background: #ffffff;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+            border-color: rgba(55, 48, 163, 0.16);
+        }
+
+        .status-dot-green {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            flex-shrink: 0;
+            animation: pulseStatusGreen 2s infinite ease-in-out;
+        }
+
+        @keyframes pulseStatusGreen {
+            0%, 100% {
+                box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.12);
+                transform: scale(1.08);
+            }
+        }
+
+        .status-text-shell {
+            font-size: 0.73rem;
+            font-weight: 600;
+            color: #475569;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+            white-space: nowrap;
         }
 
         /* ── 2. Contenedor Principal (.main-wrapper) ── */
@@ -228,11 +312,11 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             top: 0;
             width: 100%;
             box-sizing: border-box;
-            padding: 15px 30px;
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 14px 32px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.06);
             z-index: 90;
             display: flex;
             align-items: center;
@@ -242,30 +326,73 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         .topbar-left {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
+        }
+
+        /* Flecha de retroceso tenue */
+        .btn-back-subtle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.035);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            color: #94a3b8;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .btn-back-subtle:hover {
+            background: rgba(55, 48, 163, 0.08);
+            color: var(--primary-indigo, #3730a3);
+            border-color: rgba(55, 48, 163, 0.22);
+            transform: translateX(-2px);
+        }
+
+        .btn-back-subtle i {
+            font-size: 0.85rem;
+        }
+
+        .topbar-divider {
+            color: #cbd5e1;
+            font-weight: 300;
+            font-size: 1.05rem;
+            user-select: none;
+            margin: 0 2px;
+        }
+
+        .topbar-caps-tag {
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
         }
 
         .topbar-left .page-title,
         .topbar-left h1,
         .page-title {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            font-size: 2.2rem;
+            font-family: var(--font-family);
+            font-size: 1.6rem;
             font-weight: 800;
-            letter-spacing: -0.045em;
-            color: #1d1d1f;
+            letter-spacing: -0.03em;
+            color: var(--text-heading);
             margin: 0;
             line-height: 1.15;
-            /* El secreto: Una sombra de texto difuminada que lo separa del cristal de fondo */
-            text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.08);
+            text-shadow: 0px 4px 15px rgba(0, 0, 0, 0.04);
         }
 
-        /* ── 4. Contenedor de Contenido (.content-wrapper) con padding 30px ── */
+        /* ── 4. Contenedor de Contenido (.content-wrapper) ── */
         .content-wrapper {
             padding: 30px;
             box-sizing: border-box;
         }
 
-        /* Botón Atrás circular estilizado */
+        /* Botón Atrás legado */
         .btn-back {
             display: inline-flex;
             align-items: center;
@@ -294,60 +421,83 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         .topbar-right {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
+        /* Píldora redondeada de perfil de usuario */
+        .user-pill-badge,
         .user-profile-badge {
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 5px 12px 5px 6px;
-            background: rgba(255, 255, 255, 0.70);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.06);
-            border-radius: 20px;
+            padding: 5px 14px 5px 6px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: var(--radius-pill);
             text-decoration: none;
             color: inherit;
             cursor: pointer;
-            transition: all 0.16s ease;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        .user-pill-badge:hover,
         .user-profile-badge:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-            border-color: rgba(0, 0, 0, 0.12);
+            background-color: #ffffff;
+            border-color: rgba(55, 48, 163, 0.25);
             transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(55, 48, 163, 0.08);
         }
 
+        .user-avatar-circle,
         .user-avatar-initials {
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: var(--apple-blue);
+            background: linear-gradient(135deg, var(--primary-indigo), #4338ca);
             color: #ffffff;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.76rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            box-shadow: 0 2px 8px rgba(55, 48, 163, 0.30);
+            flex-shrink: 0;
         }
 
+        .user-pill-text,
         .user-text-info {
             display: flex;
             flex-direction: column;
             line-height: 1.2;
         }
 
+        .user-pill-name,
         .user-text-name {
             font-size: 0.82rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--text-heading);
+            letter-spacing: -0.01em;
         }
 
+        .user-pill-role,
         .user-text-role {
-            font-size: 0.70rem;
-            color: var(--text-secondary);
+            font-size: 0.69rem;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .user-live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+            margin-left: 2px;
+            flex-shrink: 0;
         }
 
         .btn-topbar-logout {
@@ -403,9 +553,45 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             animation: highlightNewRow 1.4s ease-out forwards !important;
         }
 
-        /* Aplicar animación de entrada al contenido principal */
-        .content-card, .content-wrapper {
+        /* Aplicar animación de entrada únicamente a las tarjetas para evitar romper position: fixed en el layout */
+        .content-card {
             animation: fadeUpSmooth 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* ── Modales Globales Estilo Neo-Corporate Apple ── */
+        .modal-overlay,
+        .modal-backdrop-ios {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            background: rgba(0, 0, 0, 0.40) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .modal-content,
+        .modal-card-ios {
+            animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         /* ── 4. Contenedor Flotante (.content-card) ── */
@@ -677,11 +863,11 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
         /* ── Estandarización de Alertas SweetAlert2 Estilo Apple ── */
         .apple-popup {
             border-radius: 24px !important;
-            padding: 28px 32px !important;
+            font-family: 'Inter', -apple-system, sans-serif !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            padding: 24px !important;
             background: #ffffff !important;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.16), 0 4px 16px rgba(0, 0, 0, 0.06) !important;
             border: 1px solid rgba(0, 0, 0, 0.06) !important;
-            font-family: var(--font-family) !important;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -739,29 +925,39 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             transform: scale(0.98) !important;
         }
 
+        /* Botón de Cancelar (Gris suave) */
         .btn-apple-cancel {
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            background: #f5f5f7 !important;
-            color: #1d1d1f !important;
-            font-family: var(--font-family) !important;
-            font-size: 0.92rem !important;
-            font-weight: 500 !important;
-            padding: 12px 24px !important;
+            background-color: #f3f4f6 !important;
+            color: #374151 !important;
             border-radius: 12px !important;
-            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            padding: 12px 24px !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            border: none !important;
+            margin-right: 12px !important;
             cursor: pointer !important;
-            transition: all 0.16s ease !important;
+            transition: background-color 0.2s !important;
         }
 
         .btn-apple-cancel:hover {
-            background: #e8e8ed !important;
-            color: #000000 !important;
+            background-color: #e5e7eb !important;
         }
 
-        .btn-apple-cancel:active {
-            transform: scale(0.98) !important;
+        /* Botón de Acción Destructiva (Rojo Apple) */
+        .btn-apple-danger {
+            background-color: #ef4444 !important;
+            color: white !important;
+            border-radius: 12px !important;
+            padding: 12px 24px !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
+            border: none !important;
+            cursor: pointer !important;
+            transition: opacity 0.2s !important;
+        }
+
+        .btn-apple-danger:hover {
+            opacity: 0.9 !important;
         }
 
         /* Notificación Toast estilo Apple */
@@ -799,6 +995,90 @@ $tituloPagina = htmlspecialchars($tituloVista ?? 'Sistema ISPEB', ENT_QUOTES, 'U
             -webkit-backdrop-filter: blur(20px) !important;
             background: rgba(255, 255, 255, 0.9) !important;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        /* ── Botón de Atrás Limpio en Topbar ── */
+        .topbar-btn-atras {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #515154;
+            font-size: 0.90rem;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 6px 10px;
+            border-radius: 10px;
+            transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+        }
+
+        .topbar-btn-atras:hover {
+            color: var(--primary-indigo, #3730a3);
+            background: rgba(55, 48, 163, 0.06);
+            transform: translateX(-2px);
+        }
+
+        .topbar-btn-atras i {
+            font-size: 0.85rem;
+        }
+
+        /* ═════════════════════════════════════════════════════════════════ */
+        /* RESPONSIVIDAD GLOBAL Y TABLAS (MEDIA QUERIES)                    */
+        /* ═════════════════════════════════════════════════════════════════ */
+
+        /* 1. Contenedor de tablas responsivo (Evita que la pantalla se ensanche) */
+        .table-responsive {
+            width: 100%;
+            max-width: 100%; /* Evita que crezca más que su padre */
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* Scroll suave en iOS */
+            border-radius: 24px;
+        }
+
+        /* Asegurarse de que la tabla en sí mantenga un ancho mínimo legible */
+        .table-responsive table {
+            min-width: 900px; /* Fuerza a la tabla a mantener su diseño original */
+            width: 100%;
+        }
+
+        /* 2. Reglas Globales Responsive (Media Queries) */
+        /* Cambiamos el breakpoint de 1024px a 1200px para pantallas medianas con Sidebar */
+        @media (max-width: 1200px) {
+            /* El grid de Reportes pasa a 1 sola columna */
+            .reportes-layout {
+                grid-template-columns: 1fr !important;
+            }
+            /* El panel de filtros dejará de ser una columna lateral y se apilará arriba */
+            .filter-card {
+                margin-bottom: 20px;
+            }
+            /* Las tarjetas Bento del Dashboard pasan a 2 o 1 columna */
+            .bento-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+            }
+            /* Ajustar paddings de la tarjeta principal y envolturas */
+            .content-card {
+                padding: 20px !important;
+            }
+            .content-wrapper {
+                padding: 20px !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* Ocultar elementos no esenciales en móvil */
+            .hide-on-mobile {
+                display: none !important;
+            }
+            /* Títulos más pequeños */
+            .page-title {
+                font-size: 1.5rem !important;
+            }
+            .content-wrapper {
+                padding: 14px !important;
+            }
+            .topbar {
+                padding: 12px 16px !important;
+            }
         }
     </style>
 </head>

@@ -27,97 +27,166 @@ require_once __DIR__ . '/layout/header.php';
 ?>
 
 <style>
-    /* ── Contenedor General y Encabezado ── */
-    .reportes-view-header {
+    /* ── Estilos Específicos: Reportes y Emisión (Neo-Corporate) ── */
+
+    /* ── Cabecera Principal Hero ── */
+    .reportes-header-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
         margin-bottom: 24px;
     }
 
-    .reportes-view-header h2 {
-        font-size: 1.35rem;
-        font-weight: 700;
-        letter-spacing: -0.025em;
-        color: #1d1d1f;
+    .reportes-header-titles {
+        max-width: 650px;
+    }
+
+    .reportes-main-title {
+        font-size: 1.85rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #1e1b4b;
         margin: 0 0 6px 0;
     }
 
-    .reportes-view-header p {
+    .reportes-subtitle {
         font-size: 0.90rem;
-        color: #86868b;
+        color: #64748b;
         margin: 0;
         line-height: 1.45;
     }
 
-    /* ── Tarea 1: Cuadrícula CSS Grid (Dos Columnas) ── */
-    .reportes-reactive-grid {
-        display: grid;
-        grid-template-columns: 340px 1fr;
-        gap: 28px;
-        align-items: start;
+    .reportes-header-pills {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
     }
 
-    @media (max-width: 1080px) {
-        .reportes-reactive-grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
+    .trust-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 16px;
+        border-radius: 20px;
+        font-size: 0.80rem;
+        font-weight: 600;
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .live-dot-emerald {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+        display: inline-block;
+    }
+
+    .text-shield-blue {
+        color: #2563eb;
+    }
+
+    /* ── Tarea 1: Cuadrícula CSS Grid (Dos Columnas) ── */
+    .reportes-layout {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    /* Cambiamos el breakpoint de 1024px a 1200px para pantallas medianas con Sidebar */
+    @media (max-width: 1200px) {
+        .reportes-layout {
+            grid-template-columns: 1fr !important;
+            gap: 20px;
+        }
+        /* El panel de filtros dejará de ser una columna lateral y se apilará arriba */
+        .filter-card {
+            margin-bottom: 20px;
         }
     }
 
-    /* ── Panel Lateral Izquierdo (Filtros) ── */
-    .panel-filtros-side {
-        background: #fbfbfd;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        border-radius: 18px;
-        padding: 24px 22px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
+    /* ── Columna Izquierda: Panel de Filtros (.filter-card) ── */
+    .filter-card {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
     }
 
-    .panel-filtros-side .panel-header {
+    .filter-card-header {
         display: flex;
         align-items: center;
-        gap: 10px;
+        justify-content: space-between;
         margin-bottom: 20px;
         padding-bottom: 14px;
         border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     }
 
-    .panel-filtros-side .panel-icon {
+    .filter-card-header-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .filter-icon-circle {
         width: 36px;
         height: 36px;
         border-radius: 10px;
-        background: rgba(0, 113, 227, 0.09);
-        color: var(--apple-blue, #0071e3);
+        background: rgba(55, 48, 163, 0.08);
+        color: #3730a3;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
-    .panel-filtros-side .panel-title-text h3 {
+    .filter-title-wrap h3 {
         font-size: 1.02rem;
         font-weight: 700;
         letter-spacing: -0.02em;
-        color: #1d1d1f;
+        color: #1e1b4b;
         margin: 0;
     }
 
-    .panel-filtros-side .panel-title-text p {
-        font-size: 0.78rem;
-        color: #86868b;
+    .filter-title-wrap p {
+        font-size: 0.76rem;
+        color: #64748b;
         margin: 2px 0 0 0;
     }
 
-    /* Inputs y Selects Redondeados Estilo Apple */
+    .pill-auto-blue {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 3px 9px;
+        border-radius: 12px;
+        border: 1px solid rgba(37, 99, 235, 0.15);
+    }
+
+    /* Inputs y Selects sin bordes duros con fondo gris ultra claro */
     .form-group-filter {
         margin-bottom: 18px;
     }
 
-    .form-group-filter label {
+    .filter-label {
         display: block;
-        font-size: 0.80rem;
-        font-weight: 600;
-        color: #1d1d1f;
-        margin-bottom: 7px;
-        letter-spacing: -0.01em;
+        font-size: 0.70rem;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .filter-input-wrap {
@@ -129,7 +198,7 @@ require_once __DIR__ . '/layout/header.php';
         left: 14px;
         top: 50%;
         transform: translateY(-50%);
-        color: #86868b;
+        color: #94a3b8;
         font-size: 0.88rem;
         pointer-events: none;
     }
@@ -139,12 +208,12 @@ require_once __DIR__ . '/layout/header.php';
         width: 100%;
         height: 42px;
         padding: 0 14px;
-        background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        background: #f3f4f6;
+        border: 1px solid transparent;
         border-radius: 12px;
         font-family: inherit;
         font-size: 0.88rem;
-        color: #1d1d1f;
+        color: #1e293b;
         box-sizing: border-box;
         outline: none;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -156,14 +225,15 @@ require_once __DIR__ . '/layout/header.php';
 
     .filter-input:focus,
     .filter-select:focus {
-        border-color: #0071e3;
-        box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+        background: #ffffff;
+        border-color: rgba(55, 48, 163, 0.3);
+        box-shadow: 0 0 0 3px rgba(55, 48, 163, 0.10);
     }
 
     .filter-select {
         appearance: none;
         -webkit-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2386868b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 14px center;
         padding-right: 36px;
@@ -174,8 +244,7 @@ require_once __DIR__ . '/layout/header.php';
     .fechas-custom-box {
         margin-top: 10px;
         padding: 12px;
-        background: #f5f5f7;
-        border: 1px solid rgba(0, 0, 0, 0.04);
+        background: #eef2f6;
         border-radius: 12px;
         display: none;
         animation: fadeUp 0.25s ease-out forwards;
@@ -188,15 +257,21 @@ require_once __DIR__ . '/layout/header.php';
     }
 
     .fechas-custom-row label {
-        font-size: 0.74rem;
-        color: #86868b;
+        font-size: 0.70rem;
+        font-weight: 700;
+        color: #64748b;
         margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 
     .fechas-custom-row input[type="date"] {
-        height: 36px;
+        height: 38px;
         font-size: 0.82rem;
         padding: 0 8px;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 8px;
     }
 
     /* Botón Limpiar Filtros */
@@ -206,55 +281,94 @@ require_once __DIR__ . '/layout/header.php';
         justify-content: center;
         gap: 7px;
         width: 100%;
-        height: 38px;
-        margin-top: 6px;
-        background: rgba(0, 0, 0, 0.04);
-        color: #515154;
+        height: 40px;
+        margin-top: 8px;
+        background: #f1f5f9;
+        color: #475569;
         font-family: inherit;
         font-size: 0.84rem;
         font-weight: 600;
-        border-radius: 10px;
-        border: 1px solid transparent;
+        border-radius: 12px;
+        border: none;
         cursor: pointer;
         transition: all 0.18s ease;
     }
 
     .btn-reset-filters:hover {
-        background: rgba(0, 0, 0, 0.08);
-        color: #1d1d1f;
+        background: #e2e8f0;
+        color: #1e1b4b;
     }
 
-    /* ── Panel Derecho: Vista Previa y Exportación ── */
-    .panel-preview-main {
+    /* Caja Informativa Footer del Panel */
+    .filter-info-box {
+        margin-top: 20px;
+        padding: 14px 16px;
+        background: #f3f4f6;
+        border-radius: 14px;
+        border: none;
+    }
+
+    .filter-info-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+    }
+
+    .info-label-caps {
+        font-size: 0.70rem;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .info-badge-blue {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #2563eb;
         background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.06);
-        border-radius: 18px;
-        padding: 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+        padding: 2px 8px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
 
-    .preview-top-bar {
+    .info-desc-text {
+        font-size: 0.76rem;
+        color: #475569;
+        font-weight: 500;
+    }
+
+    /* ── Columna Derecha: Resultados y Acción (Flotante) ── */
+    .reportes-results-column {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-width: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .results-action-bar {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16px;
         flex-wrap: wrap;
-        margin-bottom: 20px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        width: 100%;
     }
 
-    .preview-header-info {
+    .results-header-info {
         display: flex;
         align-items: center;
         gap: 12px;
     }
 
-    .preview-result-count {
-        font-size: 1.05rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: #1d1d1f;
+    .results-count-title {
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #1e1b4b;
         margin: 0;
     }
 
@@ -262,53 +376,60 @@ require_once __DIR__ . '/layout/header.php';
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.74rem;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.76rem;
         font-weight: 600;
-        background: rgba(0, 113, 227, 0.08);
-        color: #0071e3;
+        background: #ecfdf5;
+        color: #065f46;
     }
 
     .preview-badge-status .status-dot {
         width: 7px;
         height: 7px;
         border-radius: 50%;
-        background: #34c759;
-        box-shadow: 0 0 6px rgba(52, 199, 89, 0.6);
+        background: #10b981;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
     }
 
-    /* Botón "Exportar QRs a PDF" */
+    /* Botón Gigante "Exportar QRs a PDF" */
+    .btn-giant-export,
     .btn-export-pdf {
         display: inline-flex;
         align-items: center;
-        gap: 9px;
-        height: 42px;
-        padding: 0 22px;
-        background: linear-gradient(135deg, #0071e3 0%, #0051c6 100%);
+        gap: 10px;
+        height: 48px;
+        padding: 0 28px;
+        white-space: nowrap;
+        background: #3730a3;
         color: #ffffff;
         font-family: inherit;
-        font-size: 0.90rem;
-        font-weight: 600;
+        font-size: 0.95rem;
+        font-weight: 700;
         letter-spacing: -0.01em;
-        border-radius: 12px;
+        border-radius: 14px;
         border: none;
         cursor: pointer;
         text-decoration: none;
-        box-shadow: 0 4px 14px rgba(0, 113, 227, 0.28);
+        box-shadow: 0 10px 25px rgba(55, 48, 163, 0.32);
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        flex-shrink: 0;
     }
 
+    .btn-giant-export:hover,
     .btn-export-pdf:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 18px rgba(0, 113, 227, 0.36);
+        background: #4338ca;
+        transform: translateY(-2px);
+        box-shadow: 0 14px 30px rgba(55, 48, 163, 0.40);
         color: #ffffff;
     }
 
+    .btn-giant-export:active,
     .btn-export-pdf:active {
         transform: scale(0.98);
     }
 
+    .btn-giant-export:disabled,
     .btn-export-pdf:disabled {
         opacity: 0.5;
         cursor: not-allowed;
@@ -316,74 +437,92 @@ require_once __DIR__ . '/layout/header.php';
         transform: none;
     }
 
-    /* ── Tabla Minimalista Estilo iOS ── */
-    .table-container-responsive {
+    /* ── Tabla Edge-to-Edge Minimalista & Responsive ── */
+    .table-container-edge,
+    .table-container-responsive,
+    .table-responsive {
         width: 100%;
+        max-width: 100%; /* Evita que crezca más que su padre */
         overflow-x: auto;
-        border-radius: 14px;
-        border: 1px solid rgba(0, 0, 0, 0.04);
+        -webkit-overflow-scrolling: touch;
+        border-radius: 24px;
+        border: 1px solid rgba(0, 0, 0, 0.03);
         background: #ffffff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
     }
 
+    .table-responsive table,
+    .table-container-edge table,
+    .table-minimal-edge,
     .table-minimal-ios {
+        min-width: 900px; /* Fuerza a la tabla a mantener su diseño original */
         width: 100%;
         border-collapse: collapse;
         text-align: left;
     }
 
+    .table-minimal-edge thead th,
     .table-minimal-ios thead th {
-        padding: 13px 18px;
+        padding: 16px 22px;
         font-size: 0.74rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #86868b;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-        background-color: #fafafa;
+        color: #64748b;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        background-color: #f8fafc;
         white-space: nowrap;
     }
 
+    .table-minimal-edge tbody tr,
     .table-minimal-ios tbody tr {
         transition: background 0.18s ease;
     }
 
+    .table-minimal-edge tbody tr:hover,
     .table-minimal-ios tbody tr:hover {
-        background-color: #f7f7f9;
+        background-color: #f8fafc;
     }
 
+    .table-minimal-edge tbody td,
     .table-minimal-ios tbody td {
-        padding: 14px 18px;
+        padding: 16px 22px;
         font-size: 0.88rem;
-        color: #1d1d1f;
+        color: #1e293b;
+        border-left: none;
+        border-right: none;
+        border-top: none;
         border-bottom: 1px solid rgba(0, 0, 0, 0.03);
         vertical-align: middle;
     }
 
+    .table-minimal-edge tbody tr:last-child td,
     .table-minimal-ios tbody tr:last-child td {
         border-bottom: none;
     }
 
+    /* Píldora de Cédula en gris claro */
     .badge-cedula-cell {
         display: inline-flex;
         align-items: center;
-        padding: 3px 8px;
+        padding: 4px 8px;
         border-radius: 6px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 0.80rem;
+        font-size: 0.82rem;
         font-weight: 600;
-        background: rgba(0, 0, 0, 0.04);
-        color: #1d1d1f;
+        background: #f3f4f6;
+        color: #1f2937;
     }
 
     .cell-nombre {
         font-weight: 600;
-        color: #1d1d1f;
+        color: #1e1b4b;
         letter-spacing: -0.01em;
     }
 
     .cell-secondary {
-        color: #6e6e73;
-        font-size: 0.84rem;
+        color: #475569;
+        font-size: 0.85rem;
     }
 
     .empty-state-cell {
@@ -394,7 +533,7 @@ require_once __DIR__ . '/layout/header.php';
 
     .empty-state-cell i {
         font-size: 2rem;
-        color: #c7c7cc;
+        color: #cbd5e1;
         margin-bottom: 10px;
         display: block;
     }
@@ -409,36 +548,49 @@ require_once __DIR__ . '/layout/header.php';
 <!-- ── Contenedor de Contenido (.content-wrapper) ── -->
 <div class="content-wrapper">
 
-<!-- ── Contenedor Principal (.content-card) ── -->
-<div class="content-card">
-
-    <div class="reportes-view-header">
-        <h2>Reportes y Emisión de QRs</h2>
-        <p>Filtra funcionarios en tiempo real y exporta hojas de impresión masiva con códigos QR listos para producción.</p>
+    <!-- ── Tarea 2: Cabecera Principal (Fuera del Grid) ── -->
+    <div class="reportes-header-hero">
+        <div class="reportes-header-titles">
+            <h1 class="reportes-main-title">Reportes y Emisión de QRs</h1>
+            <p class="reportes-subtitle">Filtra funcionarios en tiempo real y exporta hojas de impresión con códigos QR institucionales.</p>
+        </div>
+        <div class="reportes-header-pills">
+            <div class="trust-pill" title="Mecanismo de generación de QR activo en tiempo real">
+                <span class="live-dot-emerald"></span>
+                <span>Motor QR Activo</span>
+            </div>
+            <div class="trust-pill" title="Certificación de seguridad criptográfica">
+                <i class="fa-solid fa-shield-halved text-shield-blue"></i>
+                <span>Cert. SHA-256</span>
+            </div>
+        </div>
     </div>
 
-    <!-- ── Tarea 1: Cuadrícula CSS Grid de Dos Columnas ── -->
-    <div class="reportes-reactive-grid">
+    <!-- ── Tarea 1: Cuadrícula CSS Grid de Dos Columnas (.reportes-layout) ── -->
+    <div class="reportes-layout">
 
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <!-- COLUMNA IZQUIERDA: Panel Lateral Gris Claro (Filtros)         -->
+        <!-- Tarea 3: COLUMNA IZQUIERDA: Panel de Filtros (.filter-card)   -->
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <aside class="panel-filtros-side">
-            <div class="panel-header">
-                <div class="panel-icon" aria-hidden="true">
-                    <i class="fa-solid fa-sliders"></i>
+        <aside class="filter-card">
+            <div class="filter-card-header">
+                <div class="filter-card-header-left">
+                    <div class="filter-icon-circle" aria-hidden="true">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div class="filter-title-wrap">
+                        <h3>Filtros de Búsqueda</h3>
+                        <p>Búsqueda reactiva en vivo</p>
+                    </div>
                 </div>
-                <div class="panel-title-text">
-                    <h3>Filtros de Búsqueda</h3>
-                    <p>Búsqueda reactiva en vivo</p>
-                </div>
+                <span class="pill-auto-blue">Auto</span>
             </div>
 
             <form id="form-filtros-live" onsubmit="event.preventDefault();" autocomplete="off">
 
                 <!-- 1. Búsqueda por texto (Cédula/Nombre) -->
                 <div class="form-group-filter">
-                    <label for="filtro_busqueda">Buscar por Cédula o Nombre</label>
+                    <label for="filtro_busqueda" class="filter-label">Buscar por Cédula o Nombre</label>
                     <div class="filter-input-wrap">
                         <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                         <input 
@@ -454,7 +606,7 @@ require_once __DIR__ . '/layout/header.php';
 
                 <!-- 2. Select de Departamento -->
                 <div class="form-group-filter">
-                    <label for="filtro_dept">Departamento</label>
+                    <label for="filtro_dept" class="filter-label">Departamento</label>
                     <select id="filtro_dept" name="dept" class="filter-select" aria-label="Seleccionar departamento">
                         <option value="">Todos los departamentos</option>
                         <?php foreach ($departamentos as $depto): ?>
@@ -465,9 +617,9 @@ require_once __DIR__ . '/layout/header.php';
                     </select>
                 </div>
 
-                <!-- Select Opcional de Cargo para afinamiento -->
+                <!-- Select de Cargo Institucional -->
                 <div class="form-group-filter">
-                    <label for="filtro_cargo">Cargo Institucional</label>
+                    <label for="filtro_cargo" class="filter-label">Cargo Institucional</label>
                     <select id="filtro_cargo" name="cargo" class="filter-select" aria-label="Seleccionar cargo">
                         <option value="">Todos los cargos</option>
                         <?php foreach ($cargos as $cargo): ?>
@@ -480,7 +632,7 @@ require_once __DIR__ . '/layout/header.php';
 
                 <!-- 3. Select de Rango de Fechas / Lote -->
                 <div class="form-group-filter">
-                    <label for="filtro_lote">Rango de Fechas / Lote</label>
+                    <label for="filtro_lote" class="filter-label">Rango de Fechas / Lote</label>
                     <select id="filtro_lote" name="lote" class="filter-select" aria-label="Rango de Fechas">
                         <option value="todos">Todos los registros</option>
                         <option value="24h">Últimas 24 horas</option>
@@ -493,35 +645,44 @@ require_once __DIR__ . '/layout/header.php';
                     <div id="cajaFechasCustom" class="fechas-custom-box">
                         <div class="fechas-custom-row">
                             <div>
-                                <label for="fecha_desde">Desde</label>
+                                <label for="fecha_desde" class="filter-label">Desde</label>
                                 <input type="date" id="fecha_desde" name="fecha_desde" class="filter-input">
                             </div>
                             <div>
-                                <label for="fecha_hasta">Hasta</label>
+                                <label for="fecha_hasta" class="filter-label">Hasta</label>
                                 <input type="date" id="fecha_hasta" name="fecha_hasta" class="filter-input">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Botón de Limpiar / Restablecer -->
+                <!-- Botón de Restablecer Filtros -->
                 <button type="button" id="btnLimpiarFiltros" class="btn-reset-filters">
                     <i class="fa-solid fa-rotate-left"></i>
                     <span>Restablecer Filtros</span>
                 </button>
 
+                <!-- Caja Informativa (Footer del panel de filtros) -->
+                <div class="filter-info-box">
+                    <div class="filter-info-top">
+                        <span class="info-label-caps">Formato de Salida</span>
+                        <span class="info-badge-blue">PDF/X-4 CMYK</span>
+                    </div>
+                    <div class="info-desc-text">Grilla de 8 tarjetas por pliego A4</div>
+                </div>
+
             </form>
         </aside>
 
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <!-- COLUMNA DERECHA: Vista Previa y Exportación                   -->
+        <!-- Tarea 4: COLUMNA DERECHA: Resultados y Acción (Flotante)      -->
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <main class="panel-preview-main">
+        <main class="reportes-results-column">
 
-            <!-- Encabezado con Contador y Botón Exportar QRs a PDF -->
-            <div class="preview-top-bar">
-                <div class="preview-header-info">
-                    <h3 class="preview-result-count" id="texto-resultados">
+            <!-- Header de Resultados: Conteo y Botón Gigante de Exportación -->
+            <div class="results-action-bar">
+                <div class="results-header-info">
+                    <h3 class="results-count-title" id="texto-resultados">
                         Resultados: <span id="contador-funcionarios">0</span> funcionarios
                     </h3>
                     <span class="preview-badge-status" id="badge-estado-live">
@@ -530,15 +691,15 @@ require_once __DIR__ . '/layout/header.php';
                     </span>
                 </div>
 
-                <button type="button" class="btn-export-pdf" id="btnExportarPdf" title="Generar hoja de impresión PDF con los registros actuales">
+                <button type="button" class="btn-giant-export" id="btnExportarPdf" title="Generar hoja de impresión PDF con los registros actuales">
                     <i class="fa-solid fa-file-pdf"></i>
                     <span>Exportar QRs a PDF</span>
                 </button>
             </div>
 
-            <!-- Tabla Minimalista de Vista Previa -->
-            <div class="table-container-responsive" id="contenedorTablaReportes">
-                <table class="table-minimal-ios" id="tablaPreviewReportes">
+            <!-- Tabla Edge-to-Edge Minimalista -->
+            <div class="table-container-edge table-responsive" id="contenedorTablaReportes">
+                <table class="table-minimal-edge" id="tablaPreviewReportes">
                     <thead>
                         <tr>
                             <th>Cédula</th>
@@ -561,9 +722,7 @@ require_once __DIR__ . '/layout/header.php';
 
         </main>
 
-    </div>
-
-</div>
+    </div> <!-- /.reportes-layout -->
 
 </div> <!-- /.content-wrapper -->
 

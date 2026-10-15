@@ -23,10 +23,122 @@ if (!isset($datos)) {
         }
     }
 }
+
+if (!function_exists('obtenerIniciales')) {
+    function obtenerIniciales(string $nombre): string {
+        $partes = array_values(array_filter(explode(' ', trim($nombre))));
+        if (empty($partes)) return 'FN';
+        if (count($partes) === 1) return strtoupper(mb_substr($partes[0], 0, 2, 'UTF-8'));
+        return strtoupper(mb_substr($partes[0], 0, 1, 'UTF-8') . mb_substr($partes[1], 0, 1, 'UTF-8'));
+    }
+}
+
+if (!function_exists('obtenerColorAvatar')) {
+    function obtenerColorAvatar(string $texto): array {
+        $paletas = [
+            ['bg' => '#e0e7ff', 'color' => '#3730a3'], // Índigo
+            ['bg' => '#dbeafe', 'color' => '#1d4ed8'], // Azul
+            ['bg' => '#dcfce7', 'color' => '#15803d'], // Esmeralda
+            ['bg' => '#fef3c7', 'color' => '#b45309'], // Ámbar
+            ['bg' => '#f3e8ff', 'color' => '#7e22ce'], // Púrpura
+            ['bg' => '#ffe4e6', 'color' => '#be123c'], // Rosa
+            ['bg' => '#ccfbf1', 'color' => '#0f766e'], // Turquesa
+            ['bg' => '#ede9fe', 'color' => '#5b21b6'], // Violeta
+        ];
+        $indice = abs(crc32($texto)) % count($paletas);
+        return $paletas[$indice];
+    }
+}
 ?>
 
 <style>
-    /* ── Estilos Específicos: Directorio de Funcionarios (Estilo Apple macOS/iOS) ── */
+    /* ── Estilos Específicos: Directorio de Funcionarios (Estilo Neo-Corporate) ── */
+
+    /* ── Cabecera Hero Neo-Corporate ── */
+    .funcionarios-neo-header {
+        margin-bottom: 24px;
+    }
+
+    .funcionarios-subtitle-caps {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #2563eb;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 6px;
+    }
+
+    .funcionarios-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .funcionarios-main-title {
+        font-size: 1.85rem;
+        font-weight: 800;
+        color: #1e1b4b;
+        letter-spacing: -0.03em;
+        margin: 0;
+    }
+
+    .trust-pills-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .trust-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.80rem;
+        font-weight: 600;
+        transition: transform 0.16s ease;
+    }
+
+    .trust-pill:hover {
+        transform: translateY(-1px);
+    }
+
+    .pill-active-count {
+        background: #dbeafe;
+        color: #1e40af;
+        font-weight: 700;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.10);
+    }
+
+    .pill-live-qr {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .live-dot-emerald {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+        display: inline-block;
+    }
+
+    .pill-sha-verified {
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+    }
+
+    .text-shield-blue {
+        color: #2563eb;
+    }
 
     /* Barra de herramientas interna (Toolbar) */
     .toolbar-funcionarios {
@@ -38,51 +150,71 @@ if (!isset($datos)) {
         flex-wrap: wrap;
     }
 
-    /* Buscador estilo iOS */
+    /* Buscador estilo iOS con indicador ⌘K */
     .search-wrapper-ios {
         position: relative;
         width: 100%;
-        max-width: 340px;
+        max-width: 380px;
+        display: flex;
+        align-items: center;
     }
 
     .search-input-ios {
         width: 100%;
         height: 42px;
-        padding: 0 16px 0 42px;
-        border-radius: 21px;
-        background: #f5f5f7;
-        border: 1px solid transparent;
+        padding: 0 54px 0 42px;
+        border-radius: 12px;
+        background: #f1f5f9;
+        border: 1px solid rgba(0, 0, 0, 0.04);
         outline: none;
         font-family: inherit;
         font-size: 0.88rem;
-        color: #1d1d1f;
+        color: #1e293b;
         box-sizing: border-box;
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .search-input-ios:focus {
         background: #ffffff;
-        border-color: rgba(0, 113, 227, 0.4);
-        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.10);
+        border-color: rgba(55, 48, 163, 0.4);
+        box-shadow: 0 0 0 4px rgba(55, 48, 163, 0.08);
     }
 
     .search-input-ios::placeholder {
-        color: #86868b;
+        color: #94a3b8;
     }
 
     .search-icon-svg {
         position: absolute;
-        left: 16px;
+        left: 15px;
         top: 50%;
         transform: translateY(-50%);
-        color: #86868b;
+        color: #94a3b8;
         font-size: 0.90rem;
         pointer-events: none;
         transition: color 0.2s ease;
     }
 
     .search-wrapper-ios:focus-within .search-icon-svg {
-        color: #0071e3;
+        color: #3730a3;
+    }
+
+    .search-kbd-tag {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #94a3b8;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 6px;
+        padding: 2px 6px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        pointer-events: none;
+        user-select: none;
     }
 
     /* Grupo de botones principales a la derecha */
@@ -93,7 +225,44 @@ if (!isset($datos)) {
         flex-wrap: wrap;
     }
 
-    /* Botón Registro Manual (Fondo Azul Apple #0071e3, Texto Blanco) */
+    /* Botón Carga Masiva Excel (fondo blanco, borde sutil, texto/icono verde oscuro) */
+    .btn-excel-green,
+    .btn-apple-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 42px;
+        padding: 0 18px;
+        border-radius: 12px;
+        background: #ffffff;
+        color: #047857;
+        font-family: inherit;
+        font-size: 0.88rem;
+        font-weight: 600;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none;
+    }
+
+    .btn-excel-green:hover,
+    .btn-apple-secondary:hover {
+        background: #f0fdf4;
+        border-color: #10b981;
+        color: #065f46;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+    }
+
+    .btn-excel-green i,
+    .btn-apple-secondary i {
+        color: #059669;
+        font-size: 1rem;
+    }
+
+    /* Botón Registro Manual (fondo índigo brillante, texto blanco, sombra difuminada) */
+    .btn-registro-indigo,
     .btn-apple-primary {
         display: inline-flex;
         align-items: center;
@@ -101,46 +270,24 @@ if (!isset($datos)) {
         height: 42px;
         padding: 0 20px;
         border-radius: 12px;
-        background: #0071e3;
+        background: #3730a3;
         color: #ffffff;
         font-family: inherit;
         font-size: 0.88rem;
         font-weight: 600;
         border: none;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 113, 227, 0.25);
-        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+        box-shadow: 0 8px 20px rgba(55, 48, 163, 0.25);
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         text-decoration: none;
     }
 
+    .btn-registro-indigo:hover,
     .btn-apple-primary:hover {
-        background: #0077ed;
+        background: #4338ca;
+        color: #ffffff;
         transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(0, 113, 227, 0.32);
-    }
-
-    /* Botón Carga Masiva Excel (Fondo Gris Claro #f5f5f7, Texto Negro) */
-    .btn-apple-secondary {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        height: 42px;
-        padding: 0 20px;
-        border-radius: 12px;
-        background: #f5f5f7;
-        color: #1d1d1f;
-        font-family: inherit;
-        font-size: 0.88rem;
-        font-weight: 600;
-        border: 1px solid rgba(0, 0, 0, 0.04);
-        cursor: pointer;
-        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-        text-decoration: none;
-    }
-
-    .btn-apple-secondary:hover {
-        background: #e8e8ed;
-        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(55, 48, 163, 0.35);
     }
 
     /* ── Tabla de Datos Hiper-Minimalista Estilo iOS ── */
@@ -163,27 +310,27 @@ if (!isset($datos)) {
     .table-minimal-ios thead th {
         padding: 14px 20px;
         font-size: 0.75rem;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #86868b;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.04);
-        background-color: #fafafa;
+        color: #64748b;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        background-color: #f8fafc;
         white-space: nowrap;
     }
 
     .table-minimal-ios tbody tr {
-        transition: background 0.2s ease;
+        transition: background 0.18s ease;
     }
 
     .table-minimal-ios tbody tr:hover {
-        background-color: #f5f5f7;
+        background-color: #f8fafc;
     }
 
     .table-minimal-ios tbody td {
-        padding: 16px 20px;
-        font-size: 0.90rem;
-        color: #1d1d1f;
+        padding: 14px 20px;
+        font-size: 0.88rem;
+        color: #1e293b;
         border-left: none;
         border-right: none;
         border-top: none;
@@ -195,37 +342,93 @@ if (!isset($datos)) {
         border-bottom: none;
     }
 
+    /* Píldora de Cédula: fondo #f3f4f6, border-radius: 6px */
     .badge-cedula-cell {
         display: inline-flex;
         align-items: center;
-        padding: 4px 10px;
-        border-radius: 8px;
+        padding: 4px 8px;
+        border-radius: 6px;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 0.82rem;
         font-weight: 600;
-        background: rgba(0, 0, 0, 0.04);
-        color: #1d1d1f;
+        background: #f3f4f6;
+        color: #1f2937;
+    }
+
+    /* Avatares Dinámicos & Nombre */
+    .user-avatar-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatar-circle-sm {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     }
 
     .cell-nombre {
         font-weight: 600;
-        color: #1d1d1f;
+        color: #1e293b;
         letter-spacing: -0.01em;
     }
 
-    .cell-cargo, .cell-depto {
-        color: #48484a;
+    .cell-cargo {
+        color: #475569;
+        font-size: 0.88rem;
     }
 
-    /* Botón pequeño y sutil en columna Acción (Fondo gris tenue o texto azul) */
-    .btn-ver-qr {
+    /* Píldora Departamento con punto de color */
+    .depto-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .depto-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #6366f1;
+        flex-shrink: 0;
+    }
+
+    .cell-depto {
+        color: #334155;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+
+    /* Acciones: Editar (gris oscuro, lápiz) y Ver QR (índigo, fondo #e0e7ff, sin bordes duros) */
+    .actions-group-cell {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 14px;
+        justify-content: flex-end;
+    }
+
+    .btn-action-edit,
+    .btn-editar-funcionario {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
         border-radius: 8px;
-        background: rgba(0, 113, 227, 0.08);
-        color: #0071e3;
+        background: transparent;
+        color: #475569;
         font-family: inherit;
         font-size: 0.80rem;
         font-weight: 600;
@@ -234,51 +437,110 @@ if (!isset($datos)) {
         transition: all 0.16s ease;
     }
 
-    .btn-ver-qr:hover {
-        background: #0071e3;
-        color: #ffffff;
-        box-shadow: 0 2px 8px rgba(0, 113, 227, 0.28);
+    .btn-action-edit:hover,
+    .btn-editar-funcionario:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: #1e293b;
+        box-shadow: none;
+        border: none;
     }
 
-    /* Botón Editar Funcionario (Estilo Apple Sutil) */
-    .btn-editar-funcionario {
+    .btn-action-qr,
+    .btn-ver-qr {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 12px;
+        padding: 6px 14px;
         border-radius: 8px;
-        background: rgba(0, 0, 0, 0.04);
-        color: #1d1d1f;
+        background: #e0e7ff;
+        color: #3730a3;
         font-family: inherit;
         font-size: 0.80rem;
         font-weight: 600;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        border: none;
         cursor: pointer;
         transition: all 0.16s ease;
-        margin-right: 6px;
     }
 
-    .btn-editar-funcionario:hover {
-        background: #0071e3;
+    .btn-action-qr:hover,
+    .btn-ver-qr:hover {
+        background: #c7d2fe;
+        color: #312e81;
+        transform: translateY(-1px);
+        box-shadow: none;
+    }
+
+    /* ── Paginación Inferior Flex ── */
+    .table-pagination-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.04);
+        margin-top: 8px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .pagination-info-text {
+        font-size: 0.80rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .pagination-controls-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-pagination-nav {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        background: #ffffff;
+        color: #94a3b8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: not-allowed;
+        font-size: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .page-number-active {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #3730a3;
         color: #ffffff;
-        border-color: #0071e3;
-        box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+        font-size: 0.82rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(55, 48, 163, 0.25);
     }
 
     /* ── Modales HTML Flotantes Estilo Apple (Ocultos) ── */
+    .modal-overlay,
     .modal-backdrop-ios {
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        background: rgba(0, 0, 0, 0.40);
-        backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 100vw !important; height: 100vh !important;
+        z-index: 9999 !important;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        animation: fadeIn 0.3s ease-out forwards;
         display: none;
         align-items: center;
         justify-content: center;
         padding: 20px;
     }
 
+    .modal-content,
     .modal-card-ios {
         background: #ffffff;
         border-radius: 24px;
@@ -286,7 +548,7 @@ if (!isset($datos)) {
         max-width: 480px;
         box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
         overflow: hidden;
-        animation: popInModal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     .modal-card-header {
@@ -564,113 +826,163 @@ if (!isset($datos)) {
 <!-- ── Contenedor de Contenido (.content-wrapper) ── -->
 <div class="content-wrapper">
 
-<!-- ── Contenedor Principal (.content-card) ── -->
-<div class="content-card">
-
-    <!-- ── Barra de Herramientas (Toolbar Interno) ── -->
-    <div class="toolbar-funcionarios">
-        
-        <!-- Izquierda: Input de búsqueda estilizado -->
-        <div class="search-wrapper-ios">
-            <i class="fa-solid fa-magnifying-glass search-icon-svg" aria-hidden="true"></i>
-            <input 
-                type="text" 
-                id="inputBuscador" 
-                class="search-input-ios" 
-                placeholder="Buscar por cédula, nombre, cargo..."
-                aria-label="Buscar funcionarios"
-                autocomplete="off"
-            >
+    <!-- ── Encabezado Neo-Corporate del Directorio ── -->
+    <div class="funcionarios-neo-header">
+        <div class="funcionarios-title-row">
+            <h1 class="funcionarios-main-title">Directorio de Funcionarios</h1>
+            <div class="trust-pills-group">
+                <span class="trust-pill pill-active-count">
+                    <?= count($datos) ?> Activos
+                </span>
+                <span class="trust-pill pill-live-qr">
+                    <span class="live-dot-emerald" aria-hidden="true"></span>
+                    <span>Validación QR En Vivo</span>
+                </span>
+                <span class="trust-pill pill-sha-verified">
+                    <i class="fa-solid fa-shield-halved text-shield-blue" aria-hidden="true"></i>
+                    <span>SHA-256 Verificado</span>
+                </span>
+            </div>
         </div>
-
-        <!-- Derecha: Dos botones estilo iOS -->
-        <div class="btn-actions-group">
-            <!-- Registro Manual (Azul Apple #0071e3) -->
-            <button type="button" class="btn-apple-primary" id="btnAbrirModalRegistro">
-                <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
-                <span>Registro Manual</span>
-            </button>
-
-            <!-- Carga Masiva Excel (Gris Claro #f5f5f7) -->
-            <button type="button" class="btn-apple-secondary" id="btnAbrirModalExcel">
-                <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
-                <span>Carga Masiva Excel</span>
-            </button>
-        </div>
-
     </div>
 
-    <!-- ── Tabla de Datos Hiper-Minimalista ── -->
-    <div class="table-container-responsive">
-        <table class="table-minimal-ios" id="tablaDatosFuncionarios">
-            <thead>
-                <tr>
-                    <th style="width: 140px;">Cédula</th>
-                    <th>Nombre Completo</th>
-                    <th>Cargo</th>
-                    <th>Departamento</th>
-                    <th style="text-align: right; width: 110px;">Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php if (empty($datos)): ?>
-                    <tr id="filaVacia">
-                        <td colspan="5" style="text-align: center; padding: 48px 20px; color: #86868b;">
-                            No hay funcionarios registrados en el directorio. Utiliza "Registro Manual" o "Carga Masiva Excel".
-                        </td>
+    <!-- ── Contenedor Principal (.content-card) ── -->
+    <div class="content-card">
+
+        <!-- ── Barra de Herramientas (Toolbar Interno) ── -->
+        <div class="toolbar-funcionarios">
+            
+            <!-- Izquierda: Input de búsqueda estilizado con indicador ⌘K -->
+            <div class="search-wrapper-ios">
+                <i class="fa-solid fa-magnifying-glass search-icon-svg" aria-hidden="true"></i>
+                <input 
+                    type="text" 
+                    id="inputBuscador" 
+                    class="search-input-ios" 
+                    placeholder="Buscar por cédula, nombre, cargo..."
+                    aria-label="Buscar funcionarios"
+                    autocomplete="off"
+                >
+                <kbd class="search-kbd-tag" title="Presiona ⌘K o Ctrl+K para buscar">⌘K</kbd>
+            </div>
+
+            <!-- Derecha: Botones Carga Masiva Excel y Registro Manual -->
+            <div class="btn-actions-group">
+                <!-- Carga Masiva Excel (Fondo blanco, borde sutil, texto/icono verde oscuro) -->
+                <button type="button" class="btn-excel-green btn-apple-secondary" id="btnAbrirModalExcel" title="Carga masiva desde archivo Excel">
+                    <i class="fa-solid fa-file-excel" aria-hidden="true"></i>
+                    <span>Carga Masiva Excel</span>
+                </button>
+
+                <!-- Registro Manual (Fondo índigo brillante, texto blanco, sombra difuminada) -->
+                <button type="button" class="btn-registro-indigo btn-apple-primary" id="btnAbrirModalRegistro" title="Registrar un nuevo funcionario institucional">
+                    <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                    <span>Registro Manual</span>
+                </button>
+            </div>
+
+        </div>
+
+        <!-- ── Tabla de Datos Hiper-Minimalista Edge-to-Edge ── -->
+        <div class="table-container-responsive table-responsive">
+            <table class="table-minimal-ios" id="tablaDatosFuncionarios">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">Cédula</th>
+                        <th>Nombre Completo</th>
+                        <th>Cargo</th>
+                        <th>Departamento</th>
+                        <th style="text-align: right; width: 180px;">Acción</th>
                     </tr>
-                <?php else: ?>
-                    <?php foreach ($datos as $funcionario): 
-                        $cedulaVal = htmlspecialchars((string)($funcionario['cedula'] ?? ''));
-                        $nombreVal = htmlspecialchars((string)($funcionario['nombre_completo'] ?? '—'));
-                        $cargoVal  = htmlspecialchars((string)($funcionario['cargo'] ?? '—'));
-                        $deptoVal  = htmlspecialchars((string)($funcionario['departamento'] ?? '—'));
-                    ?>
-                        <tr class="fila-funcionario" data-filtro="<?= strtolower($cedulaVal . ' ' . $nombreVal . ' ' . $cargoVal . ' ' . $deptoVal) ?>">
-                            <td>
-                                <span class="badge-cedula-cell"><?= $cedulaVal ?: '—' ?></span>
-                            </td>
-                            <td>
-                                <span class="cell-nombre"><?= $nombreVal ?></span>
-                            </td>
-                            <td>
-                                <span class="cell-cargo"><?= $cargoVal ?></span>
-                            </td>
-                            <td>
-                                <span class="cell-depto"><?= $deptoVal ?></span>
-                            </td>
-                            <td style="text-align: right; white-space: nowrap;">
-                                <button 
-                                    type="button" 
-                                    class="btn-editar-funcionario" 
-                                    onclick="editarFuncionario('<?= $funcionario['cedula'] ?>')"
-                                    title="Editar funcionario"
-                                >
-                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                                    <span>Editar</span>
-                                </button>
-                                <button 
-                                    type="button" 
-                                    class="btn-ver-qr" 
-                                    onclick="verFuncionario('<?= $funcionario['cedula'] ?>')"
-                                    title="Ver credencial y código QR"
-                                >
-                                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
-                                    <span>Ver QR</span>
-                                </button>
+                </thead>
+                <tbody>
+                    <?php if (empty($datos)): ?>
+                        <tr id="filaVacia">
+                            <td colspan="5" style="text-align: center; padding: 48px 20px; color: #86868b;">
+                                No hay funcionarios registrados en el directorio. Utiliza "Registro Manual" o "Carga Masiva Excel".
                             </td>
                         </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div> <!-- /.table-container -->
-</div> <!-- /.content-card -->
+                    <?php else: ?>
+                        <?php foreach ($datos as $funcionario): 
+                            $cedulaVal = htmlspecialchars((string)($funcionario['cedula'] ?? ''));
+                            $nombreVal = htmlspecialchars((string)($funcionario['nombre_completo'] ?? '—'));
+                            $cargoVal  = htmlspecialchars((string)($funcionario['cargo'] ?? '—'));
+                            $deptoVal  = htmlspecialchars((string)($funcionario['departamento'] ?? '—'));
+                            $iniciales = obtenerIniciales($nombreVal);
+                            $avatarColor = obtenerColorAvatar($cedulaVal ?: $nombreVal);
+                        ?>
+                            <tr class="fila-funcionario" data-filtro="<?= strtolower($cedulaVal . ' ' . $nombreVal . ' ' . $cargoVal . ' ' . $deptoVal) ?>">
+                                <td>
+                                    <span class="badge-cedula-cell"><?= $cedulaVal ?: '—' ?></span>
+                                </td>
+                                <td>
+                                    <div class="user-avatar-cell">
+                                        <div class="avatar-circle-sm" style="background-color: <?= $avatarColor['bg'] ?>; color: <?= $avatarColor['color'] ?>;">
+                                            <?= $iniciales ?>
+                                        </div>
+                                        <span class="cell-nombre"><?= $nombreVal ?></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="cell-cargo"><?= $cargoVal ?></span>
+                                </td>
+                                <td>
+                                    <span class="depto-pill">
+                                        <span class="depto-dot" aria-hidden="true"></span>
+                                        <span class="cell-depto"><?= $deptoVal ?></span>
+                                    </span>
+                                </td>
+                                <td style="text-align: right; white-space: nowrap;">
+                                    <div class="actions-group-cell">
+                                        <button 
+                                            type="button" 
+                                            class="btn-action-edit btn-editar-funcionario" 
+                                            onclick="editarFuncionario('<?= $funcionario['cedula'] ?>')"
+                                            title="Editar funcionario"
+                                        >
+                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                            <span>Editar</span>
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            class="btn-action-qr btn-ver-qr btn-action-view" 
+                                            onclick="verFuncionario('<?= $funcionario['cedula'] ?>')"
+                                            title="Ver credencial y código QR"
+                                        >
+                                            <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                                            <span>Ver QR</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div> <!-- /.table-container-responsive -->
+
+        <!-- ── Paginación Inferior ── -->
+        <div class="table-pagination-footer">
+            <div class="pagination-info-text">
+                Mostrando 1 a <?= count($datos) ?> de <?= count($datos) ?> funcionarios registrados • Total 1 Página
+            </div>
+            <div class="pagination-controls-group">
+                <button type="button" class="btn-pagination-nav" disabled title="Página anterior" aria-label="Anterior">
+                    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                <span class="page-number-active" aria-current="page">1</span>
+                <button type="button" class="btn-pagination-nav" disabled title="Página siguiente" aria-label="Siguiente">
+                    <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+
+    </div> <!-- /.content-card -->
 </div> <!-- /.content-wrapper -->
 
 <!-- ── Modal 1: Registro Manual (HTML Oculto) ── -->
-<div class="modal-backdrop-ios" id="modalRegistroManual" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card-ios">
+<div class="modal-backdrop-ios modal-overlay" id="modalRegistroManual" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card-ios modal-content">
         <div class="modal-card-header">
             <h3>Registro Manual de Funcionario</h3>
             <button type="button" class="modal-close-btn" id="btnCerrarModalReg" aria-label="Cerrar">&times;</button>
@@ -703,8 +1015,8 @@ if (!isset($datos)) {
 </div>
 
 <!-- ── Modal 2: Carga Masiva Excel (HTML Oculto) ── -->
-<div class="modal-backdrop-ios" id="modalCargaExcel" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card-ios">
+<div class="modal-backdrop-ios modal-overlay" id="modalCargaExcel" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card-ios modal-content">
         <div class="modal-card-header">
             <h3>Carga Masiva desde Excel</h3>
             <button type="button" class="modal-close-btn" id="btnCerrarModalExc" aria-label="Cerrar">&times;</button>
@@ -735,8 +1047,8 @@ if (!isset($datos)) {
 </div>
 
 <!-- ── Modal 3: Editar Funcionario (HTML Oculto Estilo Apple) ── -->
-<div class="modal-backdrop-ios" id="modalEditarFuncionario" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-card-ios">
+<div class="modal-backdrop-ios modal-overlay" id="modalEditarFuncionario" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card-ios modal-content">
         <div class="modal-card-header">
             <h3>Editar Datos del Funcionario</h3>
             <button type="button" class="modal-close-btn" id="btnCerrarModalEditFunc" aria-label="Cerrar">&times;</button>
@@ -994,6 +1306,11 @@ async function verFuncionario(cedula) {
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') cerrarModales();
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            inputBuscar?.focus();
+            inputBuscar?.select();
+        }
     });
 
     // Función auxiliar para escapar texto HTML en inserciones dinámicas
@@ -1002,6 +1319,15 @@ async function verFuncionario(cedula) {
         const d = document.createElement('div');
         d.textContent = String(texto);
         return d.innerHTML;
+    }
+
+    // Función auxiliar para calcular iniciales en frontend
+    function obtenerInicialesJs(nombre) {
+        if (!nombre) return 'FN';
+        const partes = nombre.trim().split(/\s+/).filter(Boolean);
+        if (partes.length === 0) return 'FN';
+        if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+        return (partes[0].substring(0, 1) + partes[1].substring(0, 1)).toUpperCase();
     }
 
     // 4. Envío AJAX Registro Manual en Tiempo Real (Magia Sin Recarga)
@@ -1061,6 +1387,7 @@ async function verFuncionario(cedula) {
                         filaVacia.remove();
                     }
 
+                    const iniciales = obtenerInicialesJs(nombre);
                     const nuevaFila = document.createElement('tr');
                     nuevaFila.className = 'fila-funcionario row-highlight-new';
                     nuevaFila.setAttribute('data-filtro', `${cedula} ${nombre} ${cargo} ${depto}`.toLowerCase());
@@ -1069,23 +1396,33 @@ async function verFuncionario(cedula) {
                             <span class="badge-cedula-cell">${escaparTextoHtml(cedula)}</span>
                         </td>
                         <td>
-                            <span class="cell-nombre">${escaparTextoHtml(nombre)}</span>
+                            <div class="user-avatar-cell">
+                                <div class="avatar-circle-sm" style="background-color: #e0e7ff; color: #3730a3;">
+                                    ${iniciales}
+                                </div>
+                                <span class="cell-nombre">${escaparTextoHtml(nombre)}</span>
+                            </div>
                         </td>
                         <td>
                             <span class="cell-cargo">${escaparTextoHtml(cargo)}</span>
                         </td>
                         <td>
-                            <span class="cell-depto">${escaparTextoHtml(depto)}</span>
+                            <span class="depto-pill">
+                                <span class="depto-dot" aria-hidden="true"></span>
+                                <span class="cell-depto">${escaparTextoHtml(depto)}</span>
+                            </span>
                         </td>
                         <td style="text-align: right; white-space: nowrap;">
-                            <button type="button" class="btn-editar-funcionario" onclick="editarFuncionario('${escaparTextoHtml(cedula)}')" title="Editar funcionario">
-                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                                <span>Editar</span>
-                            </button>
-                            <button type="button" class="btn-action-view" onclick="verFuncionario('${escaparTextoHtml(cedula)}')" title="Ver datos y código QR">
-                                <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
-                                <span>Ver QR</span>
-                            </button>
+                            <div class="actions-group-cell">
+                                <button type="button" class="btn-action-edit btn-editar-funcionario" onclick="editarFuncionario('${escaparTextoHtml(cedula)}')" title="Editar funcionario">
+                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                    <span>Editar</span>
+                                </button>
+                                <button type="button" class="btn-action-qr btn-ver-qr btn-action-view" onclick="verFuncionario('${escaparTextoHtml(cedula)}')" title="Ver datos y código QR">
+                                    <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
+                                    <span>Ver QR</span>
+                                </button>
+                            </div>
                         </td>
                     `;
 
@@ -1265,6 +1602,8 @@ async function verFuncionario(cedula) {
 
                     if (cellCedula) cellCedula.textContent = cedulaNueva;
                     if (cellNombre) cellNombre.textContent = nombreNuevo;
+                    const avatarEl = fila.querySelector('.avatar-circle-sm');
+                    if (avatarEl) avatarEl.textContent = obtenerInicialesJs(nombreNuevo);
                     if (cellCargo)  cellCargo.textContent  = cargoNuevo;
                     if (cellDepto)  cellDepto.textContent  = deptoNuevo;
 

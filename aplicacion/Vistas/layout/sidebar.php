@@ -50,26 +50,25 @@ $esAdmin = in_array(strtolower((string)($_SESSION['rol'] ?? '')), ['admin', 'adm
             <span>Funcionarios</span>
         </a>
 
-        <!-- Usuarios (Acceso Administrador) -->
+        <!-- Reportes (Acceso Completo para Todos los Usuarios) -->
+        <a href="<?= BASE_URL ?>/reportes" 
+           class="nav-item <?= in_array($rutaLimpia, ['reportes', 'reportes/pdf'], true) ? 'active' : '' ?>">
+            <i class="fa-solid fa-file-shield" aria-hidden="true"></i>
+            <span>Reportes</span>
+        </a>
+
+        <!-- Restringido solo para Administradores -->
         <?php if ($esAdmin): ?>
+            <span class="nav-section-title">Administración</span>
+
+            <!-- Usuarios (Acceso Administrador) -->
             <a href="<?= BASE_URL ?>/usuarios" 
                class="nav-item <?= str_starts_with($rutaLimpia, 'usuarios') ? 'active' : '' ?>">
                 <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
                 <span>Usuarios</span>
             </a>
-        <?php endif; ?>
 
-        <!-- Reportes (Acceso Administrador) -->
-        <?php if ($esAdmin): ?>
-            <a href="<?= BASE_URL ?>/reportes" 
-               class="nav-item <?= in_array($rutaLimpia, ['reportes', 'reportes/pdf'], true) ? 'active' : '' ?>">
-                <i class="fa-solid fa-file-shield" aria-hidden="true"></i>
-                <span>Reportes</span>
-            </a>
-        <?php endif; ?>
-
-        <!-- Respaldos (Acceso Administrador) -->
-        <?php if ($esAdmin): ?>
+            <!-- Respaldos (Acceso Administrador) -->
             <a href="<?= BASE_URL ?>/respaldos" 
                class="nav-item <?= (in_array($rutaLimpia, ['respaldos', 'respaldo-bd'], true) || str_starts_with($rutaLimpia, 'respaldo')) ? 'active' : '' ?>">
                 <i class="fa-solid fa-database" aria-hidden="true"></i>
@@ -77,4 +76,10 @@ $esAdmin = in_array(strtolower((string)($_SESSION['rol'] ?? '')), ['admin', 'adm
             </a>
         <?php endif; ?>
     </nav>
+
+    <!-- Estado Inferior Flotante Neo-Corporate -->
+    <div class="sidebar-bottom-status" title="Sistema en línea y seguro">
+        <span class="status-dot-green" aria-hidden="true"></span>
+        <span class="status-text-shell">En línea v2.4.0 • Vision Shell</span>
+    </div>
 </aside>
