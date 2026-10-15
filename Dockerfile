@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev \
     zip \
     unzip \
+    ca-certificates \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd zip pdo pdo_mysql mysqli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -15,8 +16,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Habilitar módulos necesarios de Apache
 RUN a2enmod rewrite headers expires deflate
 
-# Permitir que .htaccess gestione el enrutamiento (AllowOverride All)
-RUN printf '<Directory /var/www/html>\n\tOptions -Indexes +FollowSymLinks\n\tAllowOverride All\n\tRequire all granted\n</Directory>\n' > /etc/apache2/conf-available/kredentia.conf \
+# Permitir que .htaccess gestione el enrutamiento y pasar variables de entorno de Docker a PHP
+RUN printf '<Directory /var/www/html>\n\tOptions -Indexes +FollowSymLinks\n\tAllowOverride All\n\tRequire all granted\n</Directory>\nPassEnv DB_HOST DB_PORT DB_NAME DB_USER DB_PASS DB_SSL APP_ENV APP_URL PORT\n' > /etc/apache2/conf-available/kredentia.conf \
     && a2enconf kredentia
 
 # Instalar Composer desde la imagen oficial
@@ -44,5 +45,5 @@ RUN mkdir -p /var/www/html/almacenamiento/logs \
 
 EXPOSE 80
 
-# Iniciar Apache adaptando el puerto si Render inyecta la variable $PORT
-CMD ["sh", "-c", "if [ -n \"$PORT\" ]; then sed -i \"s/80/$PORT/g\" /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf; fi && exec apache2-foreground"]
+# Iniciar Apache adaptando el puerto si Render inyecta la variable $PORT y exportar variables para PHP
+CMD ["sh", "-c", "if [ -n \"$PORT\" ]; then sed -i \"s/80/$PORT/g\" /etc/apache2/ports.conf /etc/apache2/sites-available/*.conf; fi && printenv | grep -E '^(DB_|APP_|PORT)' > /var/www/html/.env.docker && chown www-data:www-data /var/www/html/.env.docker && chmod 644 /var/www/html/.env.docker && exec apache2-foreground"]

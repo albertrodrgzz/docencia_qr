@@ -15,23 +15,25 @@ define('VENDOR_DIR',   APP_ROOT . '/vendor');
 define('STORAGE_DIR',  APP_ROOT . '/almacenamiento');
 define('VERSION',      '1.0.0');
 
-// ── 1.1 Carga segura de variables de entorno (.env) ──────────────────────────
-$envFile = APP_ROOT . '/.env';
-if (file_exists($envFile)) {
-    $lineasEnv = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lineasEnv !== false) {
-        foreach ($lineasEnv as $linea) {
-            $linea = trim($linea);
-            if ($linea === '' || str_starts_with($linea, '#') || str_starts_with($linea, ';')) {
-                continue;
-            }
-            if (str_contains($linea, '=')) {
-                [$clave, $valor] = explode('=', $linea, 2);
-                $clave = trim($clave);
-                $valor = trim($valor, " \t\n\r\0\x0B\"'");
-                putenv("{$clave}={$valor}");
-                $_ENV[$clave] = $valor;
-                $_SERVER[$clave] = $valor;
+// ── 1.1 Carga segura de variables de entorno (.env y .env.docker) ───────────
+$archivosEnv = [APP_ROOT . '/.env', APP_ROOT . '/.env.docker'];
+foreach ($archivosEnv as $envFile) {
+    if (file_exists($envFile)) {
+        $lineasEnv = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lineasEnv !== false) {
+            foreach ($lineasEnv as $linea) {
+                $linea = trim($linea);
+                if ($linea === '' || str_starts_with($linea, '#') || str_starts_with($linea, ';')) {
+                    continue;
+                }
+                if (str_contains($linea, '=')) {
+                    [$clave, $valor] = explode('=', $linea, 2);
+                    $clave = trim($clave);
+                    $valor = trim($valor, " \t\n\r\0\x0B\"'");
+                    putenv("{$clave}={$valor}");
+                    $_ENV[$clave] = $valor;
+                    $_SERVER[$clave] = $valor;
+                }
             }
         }
     }

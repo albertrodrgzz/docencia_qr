@@ -12,6 +12,7 @@ use RuntimeException;
  * 
  * Implementa el patrón de diseño Singleton para gestionar una conexión única
  * y eficiente a la base de datos MySQL mediante PDO bajo PHP 8+.
+ * Compatible con Laragon (local) y entornos Cloud / Docker (Render + Aiven.io).
  */
 final class ConexionBD
 {
@@ -21,7 +22,7 @@ final class ConexionBD
     private static ?PDO $conexion = null;
 
     /**
-     * Parámetros de conexión predeterminados para entorno Laragon / Producción.
+     * Parámetros de conexión predeterminados para entorno Laragon local.
      */
     private const DB_HOST = '127.0.0.1';
     private const DB_PORT = '3306';
@@ -55,6 +56,25 @@ final class ConexionBD
     }
 
     /**
+     * Obtiene el valor de una variable de entorno consultando getenv(), $_ENV y $_SERVER.
+     * Garantiza compatibilidad tanto en CLI, Apache mod_php, Docker y Render.
+     */
+    private static function getEnvVal(string $key, string $default = ''): string
+    {
+        $val = getenv($key);
+        if ($val !== false && $val !== '') {
+            return (string) $val;
+        }
+        if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
+            return (string) $_ENV[$key];
+        }
+        if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+            return (string) $_SERVER[$key];
+        }
+        return $default;
+    }
+
+    /**
      * Obtiene la instancia única de PDO configurada estrictamente.
      * 
      * @return PDO Objeto de conexión a base de datos.
@@ -63,12 +83,13 @@ final class ConexionBD
     public static function getInstancia(): PDO
     {
         if (self::$conexion === null) {
-            $host    = getenv('DB_HOST') ?: self::DB_HOST;
-            $port    = getenv('DB_PORT') ?: self::DB_PORT;
-            $dbName  = getenv('DB_NAME') ?: self::DB_NAME;
-            $charset = getenv('DB_CHARSET') ?: self::DB_CHARSET;
-            $user    = getenv('DB_USER') !== false ? (string)getenv('DB_USER') : self::DB_USER;
-            $pass    = getenv('DB_PASS') !== false ? (string)getenv('DB_PASS') : self::DB_PASS;
+            $host    = self::getEnvVal('DB_HOST', self::DB_HOST);
+            $port    = self::getEnvVal('DB_PORT', self::DB_PORT);
+            $dbName  = self::getEnvVal('DB_NAME', self::DB_NAME);
+            $charset = self::getEnvVal('DB_CHARSET', self::DB_CHARSET);
+            $user    = self::getEnvVal('DB_USER', self::DB_USER);
+            $pass    = self::getEnvVal('DB_PASS', self::DB_PASS);
+            $sslVal  = strtolower(self::getEnvVal('DB_SSL', 'false'));
 
             $dsn = "mysql:host={$host};port={$port};dbname={$dbName};charset={$charset}";
 
@@ -81,22 +102,26 @@ final class ConexionBD
                 PDO::ATTR_EMULATE_PREPARES   => false,
                 // Respetar tipos de datos nativos devueltos por el controlador
                 PDO::ATTR_STRINGIFY_FETCHES  => false,
-                // Timeout de 5s para prevenir bloqueos indefinidos en servidores remotos
-                PDO::ATTR_TIMEOUT            => 5,
+                // Timeout de 7s para prevenir bloqueos indefinidos en servidores remotos
+                PDO::ATTR_TIMEOUT            => 7,
             ];
 
             // Soporte SSL automático para bases de datos Cloud (Aiven, PlanetScale, AWS)
-            if (getenv('DB_SSL') === 'true' || (int)$port !== 3306 || str_contains($host, 'aivencloud.com')) {
+            if ($sslVal === 'true' || $sslVal === '1' || (int)$port !== 3306 || str_contains($host, 'aivencloud.com')) {
                 $opciones[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                if (file_exists('/etc/ssl/certs/ca-certificates.crt')) {
+                    $opciones[PDO::MYSQL_ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
+                }
             }
 
             try {
                 self::$conexion = new PDO($dsn, $user, $pass, $opciones);
             } catch (PDOException $e) {
                 // Registrar el error detallado internamente
-                error_log(sprintf('[ConexionBD Error] Fallo de conexión PDO a [%s/%s con usuario %s]: %s', $host, $dbName, $user, $e->getMessage()));
+                error_log(sprintf('[ConexionBD Error] Fallo de conexión PDO a [%s:%s/%s con usuario %s]: %s', $host, $port, $dbName, $user, $e->getMessage()));
 
-                $esLocal = (getenv('APP_ENV') === 'local' || getenv('APP_ENV') === 'development' || empty(getenv('APP_ENV')));
+                $appEnv = strtolower(self::getEnvVal('APP_ENV', 'local'));
+                $esLocal = ($appEnv === 'local' || $appEnv === 'development' || empty($appEnv));
 
                 // Fallback automático en entorno local si el host remoto configurado no responde o rechaza permisos
                 if ($esLocal && $host !== '127.0.0.1' && $host !== 'localhost') {

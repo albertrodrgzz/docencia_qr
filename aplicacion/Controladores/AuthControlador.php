@@ -116,7 +116,9 @@ class AuthControlador
         } catch (Throwable $e) {
             error_log(sprintf('[AuthControlador::procesarLogin Error] %s', $e->getMessage()));
             http_response_code(500);
-            $msg = (getenv('APP_ENV') === 'local' || getenv('APP_ENV') === 'development')
+            $appEnv = strtolower(getenv('APP_ENV') ?: ($_ENV['APP_ENV'] ?? ($_SERVER['APP_ENV'] ?? 'production')));
+            $esLocal = ($appEnv === 'local' || $appEnv === 'development');
+            $msg = $esLocal
                 ? $e->getMessage()
                 : 'Error interno del servidor. Intente nuevamente.';
             echo json_encode([
