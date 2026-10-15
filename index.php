@@ -109,6 +109,7 @@ $rutas = [
     'POST:/api/usuarios/guardar' => ['App\\Controladores\\UsuarioControlador',  'guardar'],
     'POST:/usuarios/crear'   => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'GET:/validar'           => ['App\\Controladores\\ValidacionControlador',   'validar'],
+    'GET:/certificado'       => ['App\\Controladores\\CertificadoControlador',  'generar'],
     'GET:/404'               => ['App\\Controladores\\ErrorControlador',        'notFound'],
 ];
 

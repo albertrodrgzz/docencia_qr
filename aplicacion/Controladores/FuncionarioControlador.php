@@ -186,16 +186,23 @@ class FuncionarioControlador
                 return;
             }
 
+            $datos = [
+                'cedula'       => $cedula,
+                'nombre'       => $nombre,
+                'cargo'        => $cargo,
+                'departamento' => $departamento,
+            ];
+
             // ── 2. Generación del token QR único ─────────────────────────
-            $token = hash('sha256', $cedula . time() . 'ISPEB');
+            $token = hash('sha256', $datos['cedula'] . time() . 'ISPEB');
 
             // ── 3. Persistencia en base de datos ─────────────────────────
             $idRegistrador = (int) ($_SESSION['id_usuario'] ?? 0);
             $resultado = $this->modelo->registrar(
-                $cedula,
-                $nombre,
-                $cargo,
-                $departamento,
+                $datos['cedula'],
+                $datos['nombre'],
+                $datos['cargo'],
+                $datos['departamento'],
                 $token,
                 $idRegistrador
             );
@@ -212,19 +219,22 @@ class FuncionarioControlador
             }
 
             // ── 4. Generación del QR con endroid/qr-code ─────────────────
-            $contenidoQr   = self::URL_VALIDACION . $token;
-            $cedulaSafe    = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $cedula);
+            // Construcción de la URL pública absoluta que apunta al motor de certificados PDF
+            $baseUrl = $this->obtenerBaseUrl();
+            $urlValidacion = $baseUrl . '/certificado?id=' . $datos['cedula'];
+            $cedulaSafe    = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $datos['cedula']);
             $rutaArchivoQr = self::QR_DIR . '/qr_' . $cedulaSafe . '.png';
 
             // Genera el PNG en disco Y obtiene el Data URI Base64 para el frontend
-            $base64Uri = $this->generarQrPng($contenidoQr, $rutaArchivoQr);
+            $base64Uri = $this->generarQrPng($urlValidacion, $rutaArchivoQr);
 
             http_response_code(201);
             echo json_encode([
                 'exito'      => true,
-                'mensaje'    => "Funcionario '{$nombre}' registrado exitosamente.",
+                'mensaje'    => "Funcionario '{$datos['nombre']}' registrado exitosamente.",
                 'qr_base64'  => $base64Uri,
                 'token'      => $token,
+                'url_qr'     => $urlValidacion,
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Throwable $e) {
@@ -403,6 +413,7 @@ class FuncionarioControlador
             $exitosos       = 0;
             $errores        = 0;
             $idRegistrador  = (int) ($_SESSION['id_usuario'] ?? 1);
+            $baseUrl        = $this->obtenerBaseUrl();
 
             // ── 3. Iteración de filas desde la fila 2 ────────────────────
             for ($fila = 2; $fila <= $totalFilas; $fila++) {
@@ -422,26 +433,33 @@ class FuncionarioControlador
                     continue;
                 }
 
+                $datos = [
+                    'cedula'       => $cedula,
+                    'nombre'       => $nombre,
+                    'cargo'        => $cargo,
+                    'departamento' => $departamento,
+                ];
+
                 // Generar token único para el funcionario
-                $token = hash('sha256', $cedula . time() . 'ISPEB');
+                $token = hash('sha256', $datos['cedula'] . time() . 'ISPEB');
 
                 // Registro en base de datos
                 $resultado = $this->modelo->registrar(
-                    $cedula,
-                    $nombre,
-                    $cargo,
-                    $departamento,
+                    $datos['cedula'],
+                    $datos['nombre'],
+                    $datos['cargo'],
+                    $datos['departamento'],
                     $token,
                     $idRegistrador
                 );
 
                 if (!empty($resultado['exito'])) {
-                    // Generación del código QR físico en disco
-                    $contenidoQr   = self::URL_VALIDACION . $token;
-                    $cedulaSafe    = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $cedula);
+                    // Generación del código QR físico en disco concatenando la URL absoluta del certificado
+                    $urlValidacion = $baseUrl . '/certificado?id=' . $datos['cedula'];
+                    $cedulaSafe    = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $datos['cedula']);
                     $rutaArchivoQr = self::QR_DIR . '/qr_' . $cedulaSafe . '.png';
 
-                    $this->generarQrPng($contenidoQr, $rutaArchivoQr);
+                    $this->generarQrPng($urlValidacion, $rutaArchivoQr);
                     $exitosos++;
                 } else {
                     $errores++;
@@ -470,6 +488,26 @@ class FuncionarioControlador
     // ────────────────────────────────────────────────────────────────────────
     // Métodos privados de apoyo
     // ────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Obtiene la URL base absoluta del sistema (con protocolo y host si no están presentes).
+     * Garantiza que el código QR contenga una URL pública escaneable y clickable en dispositivos móviles.
+     *
+     * @return string URL base absoluta (ej: 'http://localhost/docencia_qr' o 'https://dominio.gob.ve/docencia_qr').
+     */
+    private function obtenerBaseUrl(): string
+    {
+        $baseUrl = defined('BASE_URL') ? BASE_URL : self::BASE_URL;
+
+        if (str_starts_with($baseUrl, 'http://') || str_starts_with($baseUrl, 'https://')) {
+            return rtrim($baseUrl, '/');
+        }
+
+        $protocolo = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $host      = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+        return rtrim($protocolo . $host . $baseUrl, '/');
+    }
 
     /**
      * Genera y guarda un código QR en formato PNG usando endroid/qr-code v5.

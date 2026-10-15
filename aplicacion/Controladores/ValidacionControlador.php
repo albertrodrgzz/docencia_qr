@@ -30,26 +30,29 @@ class ValidacionControlador
     }
 
     /**
-     * GET /validar?t=TOKEN
+     * GET /certificado?id=CEDULA o GET /validar?t=TOKEN
      *
-     * Valida el token del código QR y genera en tiempo real el PDF del certificado.
+     * Valida el parámetro del código QR y genera en tiempo real el PDF del certificado institucional.
      */
     public function validar(): void
     {
-        // 1. Capturar y sanear el token recibido por GET
+        // 1. Capturar y sanear el identificador (cédula por ?id= o token por ?t=)
+        $id    = trim((string) ($_GET['id'] ?? $_GET['cedula'] ?? ''));
         $token = trim((string) ($_GET['t'] ?? ''));
 
-        if ($token === '') {
+        if ($id === '' && $token === '') {
             $this->renderizarVistaError(
                 titulo: 'Error: QR no válido',
-                descripcion: 'El código QR escaneado no contiene un parámetro de autenticación válido.',
+                descripcion: 'El código QR escaneado no contiene un parámetro de autenticación o identificación válido.',
                 codigoHttp: 400
             );
             return;
         }
 
-        // 2. Consultar el funcionario en la base de datos
-        $funcionario = $this->modelo->buscarPorToken($token);
+        // 2. Consultar el funcionario en la base de datos (por cédula si viene por id= o por token si viene por t=)
+        $funcionario = ($id !== '')
+            ? $this->modelo->buscarPorCedula($id)
+            : $this->modelo->buscarPorToken($token);
 
         if (!$funcionario) {
             $this->renderizarVistaError(
