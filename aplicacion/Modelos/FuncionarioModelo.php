@@ -439,6 +439,44 @@ class FuncionarioModelo
             return ['exito' => false, 'error' => 'Error al actualizar el funcionario en la base de datos.'];
         }
     }
+
+    /**
+     * Elimina un funcionario registrado de la base de datos y su archivo QR físico.
+     *
+     * @param string $cedula Cédula del funcionario a eliminar.
+     * @return array{exito: bool, error?: string}
+     */
+    public function eliminar(string $cedula): array
+    {
+        $cedula = trim($cedula);
+        if ($cedula === '') {
+            return ['exito' => false, 'error' => 'La cédula es requerida.'];
+        }
+
+        try {
+            $funcionario = $this->buscarPorCedula($cedula);
+            if (!$funcionario) {
+                return ['exito' => false, 'error' => 'El funcionario no fue encontrado en el sistema.'];
+            }
+
+            $sql = "DELETE FROM funcionarios_registrados WHERE cedula = :cedula";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':cedula' => $cedula]);
+
+            // Eliminar archivo físico de QR si existe
+            if (class_exists('\\App\\Servicios\\QrServicio')) {
+                $rutaQr = \App\Servicios\QrServicio::obtenerRutaArchivo($cedula);
+                if (file_exists($rutaQr)) {
+                    @unlink($rutaQr);
+                }
+            }
+
+            return ['exito' => true];
+        } catch (Throwable $e) {
+            error_log(sprintf('[FuncionarioModelo::eliminar Error] %s', $e->getMessage()));
+            return ['exito' => false, 'error' => 'Error al eliminar el funcionario de la base de datos.'];
+        }
+    }
 }
 
 // Compatibilidad con namespace alternativo en minúsculas si se invoca con App\modelos

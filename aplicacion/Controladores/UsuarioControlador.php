@@ -253,4 +253,48 @@ class UsuarioControlador
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
+
+    /**
+     * POST /api/usuarios/eliminar
+     * Elimina un usuario del sistema (restringido estrictamente a Administradores).
+     */
+    public function eliminarAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $rolActual = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+        if (!isset($_SESSION['rol']) || ($rolActual !== 'admin' && $rolActual !== 'administrador')) {
+            http_response_code(403);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'No tienes permisos de administrador para eliminar usuarios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $inputRaw = file_get_contents('php://input');
+        $jsonData = json_decode($inputRaw, true) ?: [];
+
+        $id = (int) ($_POST['id_usuario'] ?? $_POST['id'] ?? $jsonData['id_usuario'] ?? $jsonData['id'] ?? 0);
+        $idAdminSesion = (int) ($_SESSION['id_usuario'] ?? 0);
+
+        if ($id <= 0) {
+            http_response_code(422);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Identificador de usuario inválido.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $res = $this->modelo->eliminarUsuario($id, $idAdminSesion);
+
+        if (!$res['exito']) {
+            http_response_code(409);
+            echo json_encode(['estado' => 'error', 'mensaje' => $res['error'] ?? 'No se pudo eliminar el usuario.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'estado'     => 'ok',
+            'exito'      => true,
+            'mensaje'    => 'Usuario eliminado correctamente.',
+            'id_usuario' => $id
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }

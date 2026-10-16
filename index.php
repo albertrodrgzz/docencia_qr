@@ -205,6 +205,8 @@ $rutas = [
     'GET:/api/funcionario'   => ['App\\Controladores\\FuncionarioControlador',  'obtenerDetallesAjax'],
     'GET:/api/funcionarios/obtener'    => ['App\\Controladores\\FuncionarioControlador',  'obtenerAjax'],
     'POST:/api/funcionarios/actualizar' => ['App\\Controladores\\FuncionarioControlador', 'actualizarAjax'],
+    'POST:/api/funcionarios/eliminar'   => ['App\\Controladores\\FuncionarioControlador', 'eliminarAjax'],
+    'POST:/funcionarios/eliminar'       => ['App\\Controladores\\FuncionarioControlador', 'eliminarAjax'],
     'GET:/reportes'          => ['App\\Controladores\\ReporteControlador',      'index'],
     'GET:/reportes/pdf'      => ['App\\Controladores\\ReporteControlador',      'generarHojaQRPdf'],
     'GET:/api/reportes/filtrar' => ['App\\Controladores\\ReporteControlador',   'filtrarAjax'],
@@ -219,6 +221,8 @@ $rutas = [
     'POST:/api/perfil/actualizar-password' => ['App\\Controladores\\PerfilControlador', 'actualizarPassword'],
     'GET:/api/usuarios/obtener'        => ['App\\Controladores\\UsuarioControlador',      'obtenerAjax'],
     'POST:/api/usuarios/actualizar'    => ['App\\Controladores\\UsuarioControlador',      'actualizarAjax'],
+    'POST:/api/usuarios/eliminar'      => ['App\\Controladores\\UsuarioControlador',      'eliminarAjax'],
+    'POST:/usuarios/eliminar'          => ['App\\Controladores\\UsuarioControlador',      'eliminarAjax'],
     'POST:/usuarios'         => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'POST:/usuarios/guardar' => ['App\\Controladores\\UsuarioControlador',      'guardar'],
     'POST:/api/usuarios/guardar' => ['App\\Controladores\\UsuarioControlador',  'guardar'],
@@ -243,7 +247,11 @@ $rutasSoloAdmin = [
     '/api/usuarios/guardar',
     '/usuarios/crear',
     '/api/usuarios/obtener',
-    '/api/usuarios/actualizar'
+    '/api/usuarios/actualizar',
+    '/api/usuarios/eliminar',
+    '/usuarios/eliminar',
+    '/api/funcionarios/eliminar',
+    '/funcionarios/eliminar'
 ];
 
 $esRutaRestringida = in_array($rutaLimpia, $rutasSoloAdmin, true) 

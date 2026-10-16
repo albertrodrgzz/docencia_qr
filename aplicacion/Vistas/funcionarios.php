@@ -13,6 +13,9 @@ $mostrarBotonAtras = false;
 
 require_once __DIR__ . '/layout/header.php';
 
+$rolSesion = strtolower(trim((string) ($_SESSION['rol'] ?? '')));
+$esAdmin   = in_array($rolSesion, ['admin', 'administrador'], true);
+
 // ── Paginación del Servidor (Server-Side Pagination) ──────────────────────
 $limite = 10; // Registros por página
 
@@ -482,6 +485,37 @@ if (!function_exists('obtenerColorAvatar')) {
         border: none;
     }
 
+    .btn-action-delete,
+    .btn-eliminar-funcionario {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: transparent;
+        color: #ef4444;
+        font-family: inherit;
+        font-size: 0.80rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+
+    .btn-action-delete:hover,
+    .btn-eliminar-funcionario:hover {
+        background: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+        box-shadow: none;
+        border: none;
+        transform: translateY(-1px);
+    }
+
+    .btn-action-delete:active,
+    .btn-eliminar-funcionario:active {
+        transform: scale(0.97);
+    }
+
     .btn-action-qr,
     .btn-ver-qr {
         display: inline-flex;
@@ -943,7 +977,7 @@ if (!function_exists('obtenerColorAvatar')) {
                         <th>Nombre Completo</th>
                         <th>Cargo</th>
                         <th>Departamento</th>
-                        <th style="text-align: right; width: 180px;">Acción</th>
+                        <th style="text-align: right; width: <?= $esAdmin ? '250px' : '150px' ?>;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -985,15 +1019,26 @@ if (!function_exists('obtenerColorAvatar')) {
                                 </td>
                                 <td style="text-align: right; white-space: nowrap;">
                                     <div class="actions-group-cell">
-                                        <button 
-                                            type="button" 
-                                            class="btn-action-edit btn-editar-funcionario" 
-                                            onclick="editarFuncionario('<?= $funcionario['cedula'] ?>')"
-                                            title="Editar funcionario"
-                                        >
-                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                                            <span>Editar</span>
-                                        </button>
+                                        <?php if ($esAdmin): ?>
+                                            <button 
+                                                type="button" 
+                                                class="btn-action-edit btn-editar-funcionario" 
+                                                onclick="editarFuncionario('<?= $funcionario['cedula'] ?>')"
+                                                title="Editar funcionario"
+                                            >
+                                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                                <span>Editar</span>
+                                            </button>
+                                            <button 
+                                                type="button" 
+                                                class="btn-action-delete btn-eliminar-funcionario" 
+                                                onclick="eliminarFuncionario('<?= $funcionario['cedula'] ?>', '<?= htmlspecialchars(addslashes($nombreVal), ENT_QUOTES, 'UTF-8') ?>')"
+                                                title="Eliminar funcionario"
+                                            >
+                                                <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                                                <span>Eliminar</span>
+                                            </button>
+                                        <?php endif; ?>
                                         <button 
                                             type="button" 
                                             class="btn-action-qr btn-ver-qr btn-action-view" 
@@ -1150,6 +1195,149 @@ if (!function_exists('obtenerColorAvatar')) {
 
 <!-- ── JavaScript de la Vista ── -->
 <script>
+const esAdminGlobal = <?= json_encode($esAdmin) ?>;
+
+/**
+ * Elimina un funcionario con confirmación previa SweetAlert2 estilo Apple.
+ * Restringido a rol Administrador.
+ * @param {string} cedula
+ * @param {string} nombre
+ */
+async function eliminarFuncionario(cedula, nombre) {
+    if (!cedula) return;
+
+    const nombreSeguro = nombre || 'este funcionario';
+
+    const confirmar = async () => {
+        try {
+            Swal.fire({
+                title: 'Eliminando...',
+                text: 'Procesando la baja del funcionario...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                customClass: { popup: 'apple-popup' },
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const formData = new FormData();
+            formData.append('cedula', cedula);
+
+            const response = await fetch(BASE_URL + '/api/funcionarios/eliminar', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.exito) {
+                Swal.fire({
+                    title: 'No se pudo eliminar',
+                    text: data.mensaje || 'Ocurrió un error al procesar la solicitud.',
+                    icon: 'error',
+                    confirmButtonText: 'Entendido',
+                    customClass: {
+                        popup: 'apple-popup',
+                        confirmButton: 'btn-apple-confirm'
+                    },
+                    buttonsStyling: false
+                });
+                return;
+            }
+
+            if (typeof Toast !== 'undefined') {
+                Toast.fire({
+                    icon: 'success',
+                    title: data.mensaje || 'Funcionario eliminado correctamente.'
+                });
+            }
+
+            Swal.fire({
+                title: '¡Funcionario Eliminado!',
+                text: `El funcionario "${nombreSeguro}" ha sido removido exitosamente.`,
+                icon: 'success',
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    popup: 'apple-popup',
+                    confirmButton: 'btn-apple-confirm'
+                },
+                buttonsStyling: false
+            });
+
+            // Animación fluida de eliminación en el DOM
+            const filas = document.querySelectorAll('.fila-funcionario');
+            filas.forEach(fila => {
+                const btnDel = fila.querySelector('.btn-eliminar-funcionario');
+                const btnEdit = fila.querySelector('.btn-editar-funcionario');
+                const celdaCedula = fila.querySelector('.badge-cedula-cell');
+
+                const coincideCedula = (celdaCedula && celdaCedula.textContent.trim() === cedula.trim())
+                    || (btnDel && btnDel.getAttribute('onclick')?.includes(cedula))
+                    || (btnEdit && btnEdit.getAttribute('onclick')?.includes(cedula));
+
+                if (coincideCedula) {
+                    fila.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                    fila.style.opacity = '0';
+                    fila.style.transform = 'scale(0.96)';
+                    setTimeout(() => {
+                        fila.remove();
+                        const filasRestantes = document.querySelectorAll('.fila-funcionario');
+                        if (filasRestantes.length === 0) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                }
+            });
+
+        } catch (err) {
+            console.error('[eliminarFuncionario Error]', err);
+            Swal.fire({
+                title: 'Error de Conexión',
+                text: 'No fue posible comunicar con el servidor.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    popup: 'apple-popup',
+                    confirmButton: 'btn-apple-confirm'
+                },
+                buttonsStyling: false
+            });
+        }
+    };
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¿Eliminar Funcionario?',
+            html: `¿Estás seguro de que deseas eliminar a <strong>${nombreSeguro}</strong> (Cédula: <code>${cedula}</code>)?<br><br><span style="font-size:0.85rem;color:#ef4444;">Esta acción borrará sus credenciales y código QR de forma permanente.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'apple-popup',
+                confirmButton: 'btn-apple-danger',
+                cancelButton: 'btn-apple-cancel'
+            },
+            backdrop: 'rgba(0,0,0,0.4)'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                confirmar();
+            }
+        });
+    } else {
+        if (confirm(`¿Estás seguro de que deseas eliminar permanentemente a "${nombreSeguro}"?`)) {
+            confirmar();
+        }
+    }
+}
+
 /**
  * Abre el modal de edición y carga los datos del funcionario desde la API.
  * Accesible globalmente para cualquier rol.
@@ -1479,10 +1667,16 @@ async function verFuncionario(cedula) {
                         </td>
                         <td style="text-align: right; white-space: nowrap;">
                             <div class="actions-group-cell">
-                                <button type="button" class="btn-action-edit btn-editar-funcionario" onclick="editarFuncionario('${escaparTextoHtml(cedula)}')" title="Editar funcionario">
-                                    <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                                    <span>Editar</span>
-                                </button>
+                                ${esAdminGlobal ? `
+                                    <button type="button" class="btn-action-edit btn-editar-funcionario" onclick="editarFuncionario('${escaparTextoHtml(cedula)}')" title="Editar funcionario">
+                                        <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                        <span>Editar</span>
+                                    </button>
+                                    <button type="button" class="btn-action-delete btn-eliminar-funcionario" onclick="eliminarFuncionario('${escaparTextoHtml(cedula)}', '${escaparTextoHtml(nombre)}')" title="Eliminar funcionario">
+                                        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                                        <span>Eliminar</span>
+                                    </button>
+                                ` : ''}
                                 <button type="button" class="btn-action-qr btn-ver-qr btn-action-view" onclick="verFuncionario('${escaparTextoHtml(cedula)}')" title="Ver datos y código QR">
                                     <i class="fa-solid fa-qrcode" aria-hidden="true"></i>
                                     <span>Ver QR</span>
@@ -1673,6 +1867,8 @@ async function verFuncionario(cedula) {
                     if (cellDepto)  cellDepto.textContent  = deptoNuevo;
 
                     btnEdit.setAttribute('onclick', `editarFuncionario('${cedulaNueva}')`);
+                    const btnDel = fila.querySelector('.btn-eliminar-funcionario');
+                    if (btnDel) btnDel.setAttribute('onclick', `eliminarFuncionario('${cedulaNueva}', '${escaparTextoHtml(nombreNuevo)}')`);
                     if (btnVerQr) btnVerQr.setAttribute('onclick', `verFuncionario('${cedulaNueva}')`);
                     fila.setAttribute('data-filtro', `${cedulaNueva} ${nombreNuevo} ${cargoNuevo} ${deptoNuevo}`.toLowerCase());
 

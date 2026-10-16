@@ -439,6 +439,44 @@ if (!function_exists('obtenerColorAvatar')) {
         border: none;
     }
 
+    .btn-action-delete,
+    .btn-eliminar-usuario {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: transparent;
+        color: #ef4444;
+        font-family: inherit;
+        font-size: 0.80rem;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+
+    .btn-action-delete:hover,
+    .btn-eliminar-usuario:hover {
+        background: rgba(239, 68, 68, 0.08);
+        color: #dc2626;
+        box-shadow: none;
+        border: none;
+        transform: translateY(-1px);
+    }
+
+    .btn-action-delete:active,
+    .btn-eliminar-usuario:active {
+        transform: scale(0.97);
+    }
+
+    .actions-group-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
     /* ── Paginación Inferior Flex ── */
     .table-pagination-footer {
         display: flex;
@@ -744,7 +782,7 @@ if (!function_exists('obtenerColorAvatar')) {
                         <th>Correo Institucional</th>
                         <th>Rol de Acceso</th>
                         <th>Estado</th>
-                        <th style="text-align: right; width: 100px;">Acciones</th>
+                        <th style="text-align: right; width: 170px;">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -796,15 +834,28 @@ if (!function_exists('obtenerColorAvatar')) {
                                 </td>
                                 <td style="text-align: right; white-space: nowrap;">
                                     <?php if (isset($_SESSION['rol']) && in_array(strtolower(trim((string)$_SESSION['rol'])), ['admin', 'administrador'], true)): ?>
-                                        <button 
-                                            type="button" 
-                                            class="btn-action-edit btn-editar-usuario" 
-                                            onclick="editarUsuario(<?= (int)$usr['id_usuario'] ?>)"
-                                            title="Editar usuario"
-                                        >
-                                            <i class="fa-solid fa-pen" aria-hidden="true"></i>
-                                            <span>Editar</span>
-                                        </button>
+                                        <div class="actions-group-cell">
+                                            <button 
+                                                type="button" 
+                                                class="btn-action-edit btn-editar-usuario" 
+                                                onclick="editarUsuario(<?= (int)$usr['id_usuario'] ?>)"
+                                                title="Editar usuario"
+                                            >
+                                                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                                                <span>Editar</span>
+                                            </button>
+                                            <?php if ((int)$usr['id_usuario'] !== (int)($_SESSION['id_usuario'] ?? 0)): ?>
+                                                <button 
+                                                    type="button" 
+                                                    class="btn-action-delete btn-eliminar-usuario" 
+                                                    onclick="eliminarUsuario(<?= (int)$usr['id_usuario'] ?>, '<?= htmlspecialchars(addslashes($nombreMostrar), ENT_QUOTES, 'UTF-8') ?>')"
+                                                    title="Eliminar usuario"
+                                                >
+                                                    <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+                                                    <span>Eliminar</span>
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -951,6 +1002,142 @@ if (!function_exists('obtenerColorAvatar')) {
 
 <!-- ── Scripts Interactivos del Módulo Usuarios ── -->
 <script>
+/**
+ * Elimina un usuario con confirmación previa SweetAlert2 estilo Apple.
+ * Disponible para rol Administrador.
+ * @param {number} id
+ * @param {string} nombre
+ */
+async function eliminarUsuario(id, nombre) {
+    if (!id) return;
+
+    const nombreSeguro = nombre || 'este usuario';
+
+    const confirmar = async () => {
+        try {
+            Swal.fire({
+                title: 'Eliminando...',
+                text: 'Procesando la baja del usuario...',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                customClass: { popup: 'apple-popup' },
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const formData = new FormData();
+            formData.append('id_usuario', id);
+
+            const response = await fetch(BASE_URL + '/api/usuarios/eliminar', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.exito) {
+                Swal.fire({
+                    title: 'No se pudo eliminar',
+                    text: data.mensaje || 'Ocurrió un error al procesar la solicitud.',
+                    icon: 'error',
+                    confirmButtonText: 'Entendido',
+                    customClass: {
+                        popup: 'apple-popup',
+                        confirmButton: 'btn-apple-confirm'
+                    },
+                    buttonsStyling: false
+                });
+                return;
+            }
+
+            if (typeof Toast !== 'undefined') {
+                Toast.fire({
+                    icon: 'success',
+                    title: data.mensaje || 'Usuario eliminado correctamente.'
+                });
+            }
+
+            Swal.fire({
+                title: '¡Usuario Eliminado!',
+                text: `El usuario "${nombreSeguro}" ha sido eliminado exitosamente del sistema.`,
+                icon: 'success',
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    popup: 'apple-popup',
+                    confirmButton: 'btn-apple-confirm'
+                },
+                buttonsStyling: false
+            });
+
+            // Animación y remoción en el DOM
+            const filas = document.querySelectorAll('.fila-usuario');
+            filas.forEach(fila => {
+                const btnEdit = fila.querySelector('.btn-editar-usuario');
+                const btnDel = fila.querySelector('.btn-eliminar-usuario');
+                if ((btnDel && btnDel.getAttribute('onclick')?.includes(String(id))) ||
+                    (btnEdit && btnEdit.getAttribute('onclick')?.includes(String(id)))) {
+                    fila.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                    fila.style.opacity = '0';
+                    fila.style.transform = 'scale(0.96)';
+                    setTimeout(() => {
+                        fila.remove();
+                        const filasRestantes = document.querySelectorAll('.fila-usuario');
+                        if (filasRestantes.length === 0) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                }
+            });
+
+        } catch (err) {
+            console.error('[eliminarUsuario Error]', err);
+            Swal.fire({
+                title: 'Error de Conexión',
+                text: 'No fue posible comunicar con el servidor.',
+                icon: 'error',
+                confirmButtonText: 'Aceptar',
+                customClass: {
+                    popup: 'apple-popup',
+                    confirmButton: 'btn-apple-confirm'
+                },
+                buttonsStyling: false
+            });
+        }
+    };
+
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: '¿Eliminar Usuario?',
+            html: `¿Estás seguro de que deseas eliminar permanentemente la cuenta de <strong>${nombreSeguro}</strong>?<br><br><span style="font-size:0.85rem;color:#ef4444;">Esta acción revocará su acceso al sistema institucional.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar',
+            buttonsStyling: false,
+            customClass: {
+                popup: 'apple-popup',
+                confirmButton: 'btn-apple-danger',
+                cancelButton: 'btn-apple-cancel'
+            },
+            backdrop: 'rgba(0,0,0,0.4)'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                confirmar();
+            }
+        });
+    } else {
+        if (confirm(`¿Estás seguro de que deseas eliminar permanentemente al usuario "${nombreSeguro}"?`)) {
+            confirmar();
+        }
+    }
+}
+
 /**
  * Abre el modal de edición y carga la información del usuario vía API.
  * Disponible exclusivamente para rol Administrador.

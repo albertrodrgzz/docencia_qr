@@ -647,4 +647,53 @@ class FuncionarioControlador
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
+
+    /**
+     * POST /api/funcionarios/eliminar
+     * Elimina un funcionario del sistema institucional (restringido a Administradores).
+     */
+    public function eliminarAjax(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!$this->sesionActiva()) {
+            http_response_code(401);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'Sesión no autenticada.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $rolActual = strtolower(trim((string)($_SESSION['rol'] ?? '')));
+        if (!in_array($rolActual, ['admin', 'administrador'], true)) {
+            http_response_code(403);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'No tienes permisos de administrador para eliminar funcionarios.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $inputRaw = file_get_contents('php://input');
+        $jsonData = json_decode($inputRaw, true) ?: [];
+
+        $cedula = trim((string) ($_POST['cedula'] ?? $jsonData['cedula'] ?? ''));
+
+        if ($cedula === '') {
+            http_response_code(422);
+            echo json_encode(['estado' => 'error', 'mensaje' => 'La cédula del funcionario es requerida.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $res = $this->modelo->eliminar($cedula);
+
+        if (!$res['exito']) {
+            http_response_code(409);
+            echo json_encode(['estado' => 'error', 'mensaje' => $res['error'] ?? 'No se pudo eliminar el funcionario.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        echo json_encode([
+            'estado'  => 'ok',
+            'exito'   => true,
+            'mensaje' => 'Funcionario eliminado exitosamente.',
+            'cedula'  => $cedula
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }

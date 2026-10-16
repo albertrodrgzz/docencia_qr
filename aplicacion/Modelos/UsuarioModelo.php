@@ -252,6 +252,69 @@ class UsuarioModelo
             return ['exito' => false, 'error' => 'Error al actualizar el usuario en la base de datos.'];
         }
     }
+
+    /**
+     * Elimina un usuario del sistema institucional asegurando integridad referencial.
+     *
+     * @param int $id ID del usuario a eliminar.
+     * @param int $idAdminSesion ID del administrador que ejecuta la acción.
+     * @return array{exito: bool, error?: string}
+     */
+    public function eliminarUsuario(int $id, int $idAdminSesion): array
+    {
+        if ($id <= 0) {
+            return ['exito' => false, 'error' => 'Identificador de usuario inválido.'];
+        }
+
+        // 1. Prohibir auto-eliminación de la cuenta en sesión
+        if ($id === $idAdminSesion) {
+            return ['exito' => false, 'error' => 'No puedes eliminar tu propia cuenta de usuario en sesión.'];
+        }
+
+        try {
+            $usuario = $this->buscarPorId($id);
+            if (!$usuario) {
+                return ['exito' => false, 'error' => 'El usuario no existe o ya fue eliminado.'];
+            }
+
+            // 2. Si el usuario es administrador, comprobar que no sea el único administrador restante
+            $rol = strtolower(trim((string)($usuario['rol'] ?? '')));
+            if ($rol === 'admin' || $rol === 'administrador') {
+                $sqlAdmins = "SELECT COUNT(*) FROM usuarios_sistema WHERE LOWER(rol) IN ('admin', 'administrador') AND id_usuario != :id";
+                $stmtAdmins = $this->pdo->prepare($sqlAdmins);
+                $stmtAdmins->execute([':id' => $id]);
+                $otrosAdmins = (int) $stmtAdmins->fetchColumn();
+
+                if ($otrosAdmins === 0) {
+                    return ['exito' => false, 'error' => 'No se puede eliminar al único administrador del sistema institucional.'];
+                }
+            }
+
+            // 3. Ejecutar transacción: reasignar funcionarios registrados para evitar violaciones de clave foránea (ON DELETE RESTRICT)
+            $this->pdo->beginTransaction();
+
+            $sqlReasignar = "UPDATE funcionarios_registrados SET registrado_por = :admin_id WHERE registrado_por = :id";
+            $stmtReasignar = $this->pdo->prepare($sqlReasignar);
+            $stmtReasignar->execute([
+                ':admin_id' => $idAdminSesion,
+                ':id'       => $id
+            ]);
+
+            $sqlDelete = "DELETE FROM usuarios_sistema WHERE id_usuario = :id";
+            $stmtDelete = $this->pdo->prepare($sqlDelete);
+            $stmtDelete->execute([':id' => $id]);
+
+            $this->pdo->commit();
+
+            return ['exito' => true];
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log(sprintf('[UsuarioModelo::eliminarUsuario Error] %s', $e->getMessage()));
+            return ['exito' => false, 'error' => 'Error al eliminar el usuario de la base de datos.'];
+        }
+    }
 }
 
 // Compatibilidad con namespace en minúsculas si se invoca con App\modelos
